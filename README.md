@@ -59,69 +59,7 @@ This code will not be perfect, and you will need to fix multiple things to creat
 #####
 ##Read in and clean data
 VanCity <- readOGR(".", 'local-area-boundary', verbose = FALSE)
-VanCrime <- read.csv("./crimedata_csv_all_years.csv")
 
-#clean up the columns
-VanCrime_Clean <- VanCrime[which(VanCrime$YEAR == 2014),]
-# range(VanCrime_Clean$YEAR)
-# range(VanCrime_Clean$X)
-
-#omit values with NA
-VanCrime_Clean <- na.omit(VanCrime_Clean)
-# range(VanCrime_Clean$X)
-
-VanCrime_Clean <- VanCrime_Clean[which(VanCrime_Clean$X > 0), ]
-# range(VanCrime_Clean$X)
-# range(VanCrime_Clean$Y)
-
-Coords <- VanCrime_Clean[,c("X", "Y")]
-crs <- CRS("+init=epsg:32610")
-
-#create a file type called a SpatialPointsDataFrame
-VanCrimePoints <- SpatialPointsDataFrame(coords = Coords, data = VanCrime_Clean, proj4string = crs)
-
-#transform the projection of both datasets to ensure that they are the same
-VanCrimePoints <- spTransform(VanCrimePoints, CRS("+init=epsg:3005"))
-VanCity <- spTransform(VanCity, CRS("+init=epsg:3005"))
-
-#intersect the two datasets
-VanCrimePoints <- raster::intersect(VanCrimePoints, VanCity)
-
-#convert the crimes data type to factor
-VanCrimePoints@data$TYPE <- as.factor(VanCrimePoints@data$TYPE)
-# levels(VanCrimePoints$TYPE)
-
-kma_crime1 <- VanCrimePoints[which(VanCrimePoints$TYPE == "Mischief"),]
-kma_crime1$x <- coordinates(kma_crime1)[,1]
-kma_crime1$y <- coordinates(kma_crime1)[,2]
-
-kma_crime2 <- VanCrimePoints[which(VanCrimePoints$TYPE == "Break and Enter Residential/Other"),]
-kma_crime2$x <- coordinates(kma_crime2)[,1]
-kma_crime2$y <- coordinates(kma_crime2)[,2]
-
-#check for and remove duplicated points
-#first, finds zero distance among points to see if there are any duplicates
-zd <- zerodist(kma_crime1)
-# zd
-
-zd <- zerodist(kma_crime2)
-# zd
-
-#if there are duplicates, remove them
-kma_crime1 <- remove.duplicates(kma_crime1)
-kma_crime2 <- remove.duplicates(kma_crime2)
-
-#create an "extent" object which can be used to create the observation window for spatstat
-kma1.ext <- as.matrix(extent(kma_crime1)) 
-kma2.ext <- as.matrix(extent(kma_crime2)) 
-
-#observation window
-window1 <- as.owin(list(xrange = kma1.ext[1,], yrange = kma1.ext[2,]))
-window2 <- as.owin(list(xrange = kma2.ext[1,], yrange = kma2.ext[2,]))
-
-#create ppp oject from spatstat
-kma1.ppp <- ppp(x = kma_crime1$x, y = kma_crime1$y, window = window1)
-kma2.ppp <- ppp(x = kma_crime2$x, y = kma_crime2$y, window = window2)
 ```
 
 ## Study Area
