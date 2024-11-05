@@ -235,3 +235,69 @@ ggplot() +
   theme(legend.position = "bottom")
 ```
 
+## Create Density Dataset of Point Events
+In this section you will create a raster dataset of the density of points per unity area across the province. You will convert your point shapefile into a density raster showing the number of events per raster cell. Be mindful that the resolution you select here should match the resolution of your spatial interpolation outputs.
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+# Load your point data (make sure to adjust the path)
+C_FIRE_PNT_point <- st_read("C_FIRE_PNT_point.shp")
+abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
+
+# Ensure bbox2 is valid and formatted correctly
+bbox2 <- st_bbox(abms_prov_polygon)
+
+raster_res <- 50000  # 50 km in meters
+raster_template <- raster(extent(bbox2), res = c(raster_res, raster_res))
+
+# Estimate density using kernel density estimate
+density_raster <- raster::rasterize(st_as_sf(C_FIRE_PNT_point), raster_template, fun = "count", field = 1)
+
+# Ensure all NAs are turned to zeros in the raster
+density_raster[is.na(density_raster)] <- 0
+
+# Convert the raster to a data frame and replace any potential NAs with zeros
+density_df <- as.data.frame(density_raster, xy = TRUE)
+density_df[is.na(density_df)] <- 0  # Replace NAs in the data frame with zeros
+
+# Step to rename the 'layer' column to 'fires' if applicable
+colnames(density_df)[colnames(density_df) == "layer"] <- "fires"
+
+# Convert to a spatial points data frame using sf (if needed later)
+density_sf <- st_as_sf(density_df, coords = c("x", "y"), crs = st_crs(abms_prov_polygon))
+
+# Plotting the density map with the polygon boundary
+ggplot() +
+  geom_raster(data = density_df, aes(x = x, y = y, fill = fires)) +  # Use 'fires' from the data frame
+  geom_sf(data = abms_prov_polygon, fill = NA, color = "black") + # Boundary polygon
+  scale_fill_viridis_c(option = "plasma") +  # Using a color scale
+  theme_minimal() +
+  labs(title = "Density Map of Fire Points",
+       x = "Longitude",
+       y = "Latitude",
+       fill = "Density")
+
+# Convert the raster to a data frame
+density_df <- as.data.frame(density_raster, xy = TRUE)
+
+# Rename the 'layer' column to 'fires'
+colnames(density_df)[colnames(density_df) == "layer"] <- "fires"
+
+# Replace NA values with zeros
+density_df[is.na(density_df$fires), "fires"] <- 0
+
+# Convert to a spatial points data frame using sf
+density_sf <- st_as_sf(density_df, coords = c("x", "y"), crs = st_crs(abms_prov_polygon))
+
+# Write to a shapefile
+st_write(density_sf, "density_points.shp", delete_dsn = TRUE)
+
+# Create a simple map
+ggplot() +
+  geom_sf(data = abms_prov_polygon, fill = NA, color = "black") +  # Plot the boundary polygon
+  geom_sf(data = density_sf, aes(color = fires), size = 1) +  # Plot the density points with color mapping
+  scale_color_viridis_c(option = "plasma", name = "Density of Fires") +  # Color scale for density values
+  theme_minimal() +
+  labs(title = "Density of Fires within Boundary",
+       x = "Longitude",
+       y = "Latitude")
+```
