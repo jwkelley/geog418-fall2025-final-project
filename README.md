@@ -5,7 +5,7 @@ Final Project Instructions and Code
 
 Welcome to your final project for Geog 418. This project will provide you with an opportunity to utilize the skills gained in the first half of this course along with some new ones to provide a spatial analysis of climate-driven events in British Columbia.&nbsp;
 
-**## Learning Outcomes**
+## Learning Outcomes
 After completing this project, you will be able to:
 download and clean climate data and create spatially interpolated surfaces
 perform geographically weighted regression to estimate the influence of climate on natural events
@@ -13,30 +13,30 @@ utilize all spatial analysis methods used in this course
 employ ChatGPT or Microsoft Pilot for solving coding problems
 
 
-**## Instructions**
+## Instructions
 ### A. Define Your Topic
 
 You must select a topic that allows you to perform an analysis on two variables: (1) point locations of some climate-mediated event (e.g. wildfires, landslides, deaths to heat exposure), and (2) climate data from point locations such as weather stations. For example, you could analyze how the number of days of 25 degrees Celsius influences wildfire occurrence. It is recommended that your project focus on the province of British Columbia.
 
-###B. Collect and Analyze Point Data of Climate-Driven Event
+### B. Collect and Analyze Point Data of Climate-Driven Event
 
 Collect point data for your "events" variable (e.g. wildfires, landslides, etc.). It is recommended that you search the BC Data Catalogue for this dataset unless you know of other credible sources. Apply descriptive statistics, spatial descriptive statistics, and point pattern analysis to describe the nature of these events for a specific timeframe.
 
 
-###C. Collect and Process Climate Data
+### C. Collect and Process Climate Data
 Collect point data for your climate variable (e.g. mean temperature, min temperature, daily maximum precipitation, etc.). This data must be point data. It is recommended that you collect this data from the Weather Station Data Portal from the Pacific Climate Impacts Consortium (PCIC).
 
 Clean this data so that you have each weather station represented by a single value for a specific variable. For example, if you are interested in the influence of temperature on wildfires, you will want to download daily or monthly temperatures and clean the data to provide a single value, such as mean temperature during the wildfire season, average minimum daily temperature, etc.
 
-###D. Create Spatially Interpolated Climate Surfaces
+### D. Create Spatially Interpolated Climate Surfaces
 Once your data is cleaned, perform both inverse distance weighting and kriging to create spatially interpolated surfaces of your climate data. As part of your analysis you should evaluate the quality of each method based on the objective of your analysis.
 
-###E. Estimate Influence of Climate on Event Occurrence
+### E. Estimate Influence of Climate on Event Occurrence
 Perform a regression analysis to determine the degree to which your climate variable is able to explain the variability in your event occurrence. Perform a test of spatial autocorrelation on the residuals from your regression model to determine if your analysis is negating a primary assumption with performing a regression analysis.&nbsp;
 
 You will likely find the you are negating a primary assumption, which will lead you to perform a geographically weighted regression. From this analysis, make conclusions about the influence of climate on your events.
 
-###F. Deliverable
+### F. Deliverable
 You have two options for creating your deliverable:
 - Submit a brief scientific report the follows the general flow of a scientific paper (Introduction, Methods, Results, Conclusion).&nbsp;
 - Submit a tutorial that walks a reader through all the steps you completed to perform this analysis.
@@ -47,7 +47,7 @@ You have two options for how you submit your deliverable:
 
 Whatever you choose, you must also submit your code and data, and we must be able to run your code with your data on our computer.&nbsp;
 
-###G. Data Processing
+### G. Data Processing
 You will be provided with R code for the following:
 - cleaning and mapping weather station data from PCIC
 - performing IDW and kriging
