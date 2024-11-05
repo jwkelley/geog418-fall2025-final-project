@@ -5,7 +5,7 @@ Final Project Instructions and Code
 
 Welcome to your final project for Geog 418. This project will provide you with an opportunity to utilize the skills gained in the first half of this course along with some new ones to provide a spatial analysis of climate-driven events in British Columbia.&nbsp;
 
-##Learning Outcomes
+**## Learning Outcomes**
 After completing this project, you will be able to:
 download and clean climate data and create spatially interpolated surfaces
 perform geographically weighted regression to estimate the influence of climate on natural events
@@ -13,8 +13,8 @@ utilize all spatial analysis methods used in this course
 employ ChatGPT or Microsoft Pilot for solving coding problems
 
 
-**##Instructions**
-###A. Define Your Topic
+**## Instructions**
+### A. Define Your Topic
 
 You must select a topic that allows you to perform an analysis on two variables: (1) point locations of some climate-mediated event (e.g. wildfires, landslides, deaths to heat exposure), and (2) climate data from point locations such as weather stations. For example, you could analyze how the number of days of 25 degrees Celsius influences wildfire occurrence. It is recommended that your project focus on the province of British Columbia.
 
