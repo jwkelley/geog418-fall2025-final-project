@@ -7,10 +7,10 @@ Welcome to your final project for Geog 418. This project will provide you with a
 
 ## Learning Outcomes
 After completing this project, you will be able to:
-download and clean climate data and create spatially interpolated surfaces
-perform geographically weighted regression to estimate the influence of climate on natural events
-utilize all spatial analysis methods used in this course
-employ ChatGPT or Microsoft Pilot for solving coding problems
+- Download and clean climate data and create spatially interpolated surfaces
+- Perform geographically weighted regression to estimate the influence of climate on natural events
+- Utilize all spatial analysis methods used in this course
+- Employ ChatGPT or Microsoft Pilot for solving coding problems
 
 
 ## Instructions
