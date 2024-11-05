@@ -13,7 +13,7 @@ utilize all spatial analysis methods used in this course
 employ ChatGPT or Microsoft Pilot for solving coding problems
 
 
-##Instructions
+**##Instructions**
 ###A. Define Your Topic
 
 You must select a topic that allows you to perform an analysis on two variables: (1) point locations of some climate-mediated event (e.g. wildfires, landslides, deaths to heat exposure), and (2) climate data from point locations such as weather stations. For example, you could analyze how the number of days of 25 degrees Celsius influences wildfire occurrence. It is recommended that your project focus on the province of British Columbia.
