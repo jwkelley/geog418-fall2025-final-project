@@ -1,56 +1,59 @@
 # geog418-fall2024-final-project
 Final Project Instructions and Code
 
----
-title: "Geog 418 Final Project"
-author: "Geog 418"
-date: "05/11/2024"
-output: pdf_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-##R Markdown requires that you have a an application installed on you machine that can run Latex. If you do not already have Latex on your computer, you can install it direction from R with the following code:
-
-tinytex::install_tinytex()
 
 
-## For this lab you will need the following libraries: 
-##, raster, spatstat, tmap, knitr
+Welcome to your final project for Geog 418. This project will provide you with an opportunity to utilize the skills gained in the first half of this course along with some new ones to provide a spatial analysis of climate-driven events in British Columbia.&nbsp;
+
+##Learning Outcomes
+After completing this project, you will be able to:
+download and clean climate data and create spatially interpolated surfaces
+perform geographically weighted regression to estimate the influence of climate on natural events
+utilize all spatial analysis methods used in this course
+employ ChatGPT or Microsoft Pilot for solving coding problems
 
 
-library("raster")
-library("spatstat")
-library("tmap")
-library("knitr")
-library("sf")
-library("ggplot2")
-library("spatstat")
-library("sp")
-library("st")
-library("dplyr")
-library("plyr")
+##Instructions
+###A. Define Your Topic
+
+You must select a topic that allows you to perform an analysis on two variables: (1) point locations of some climate-mediated event (e.g. wildfires, landslides, deaths to heat exposure), and (2) climate data from point locations such as weather stations. For example, you could analyze how the number of days of 25 degrees Celsius influences wildfire occurrence. It is recommended that your project focus on the province of British Columbia.
+
+###B. Collect and Analyze Point Data of Climate-Driven Event
+
+Collect point data for your "events" variable (e.g. wildfires, landslides, etc.). It is recommended that you search the BC Data Catalogue for this dataset unless you know of other credible sources. Apply descriptive statistics, spatial descriptive statistics, and point pattern analysis to describe the nature of these events for a specific timeframe.
 
 
+###C. Collect and Process Climate Data
+Collect point data for your climate variable (e.g. mean temperature, min temperature, daily maximum precipitation, etc.). This data must be point data. It is recommended that you collect this data from the Weather Station Data Portal from the Pacific Climate Impacts Consortium (PCIC).
 
-dir <- "C:/Users/chrisbone/OneDrive - University of Victoria/Courses/Geog 418 Spatial Analysis/2024/Assignment 2"
-setwd(dir)
+Clean this data so that you have each weather station represented by a single value for a specific variable. For example, if you are interested in the influence of temperature on wildfires, you will want to download daily or monthly temperatures and clean the data to provide a single value, such as mean temperature during the wildfire season, average minimum daily temperature, etc.
 
-```
+###D. Create Spatially Interpolated Climate Surfaces
+Once your data is cleaned, perform both inverse distance weighting and kriging to create spatially interpolated surfaces of your climate data. As part of your analysis you should evaluate the quality of each method based on the objective of your analysis.
 
-## Introduction
+###E. Estimate Influence of Climate on Event Occurrence
+Perform a regression analysis to determine the degree to which your climate variable is able to explain the variability in your event occurrence. Perform a test of spatial autocorrelation on the residuals from your regression model to determine if your analysis is negating a primary assumption with performing a regression analysis.&nbsp;
 
-Vancouver, British Columbia is seeing a concerning rise in crime in 2020 so far, with violent crimes up 5.6% and commercial break ins up 47.9%, according to the Vancouver Police Department [1]. This rise in crime comes amidst the COVID-19 pandemic, a global event that has forced the re-organization of the daily routines of the many people worldwide. In Vancouver, this re-organization has largely taken the form of people spending more time at home, and businesses reducing their hours or closing altogether. Such shifts in the routine activities of the general public is thought to have a measurable effect on the spatial and temporal distribution of crime, as described by routine activity theory [2]. According to routine activity theory, a crime requires the convergence of a “likely offender”, a “suitable target” and “the absence of capable guardians” in time and space [2]. Given this theory, the increase in crime rates, and the dramatic re-arrangement of routine activities in Vancouver, it is highly relevant that the spatial dynamics of crime be studied in Vancouver at this time.
+You will likely find the you are negating a primary assumption, which will lead you to perform a geographically weighted regression. From this analysis, make conclusions about the influence of climate on your events.
 
-While there have been several studies conducted on the spatial distribution of crimes in Vancouver in the past [3,4,5], there is a lack of temporally relevant crime studies in the literature. Aside from scientific literature, the other main resource for information about crime in Vancouver is the VPD, who provide regular updates comparing the number of crime incidents from year to year. While these reports are useful, they do not provide significant detail about the spatial aspect of crime data. In addition to the need for updated scientific analysis of crime in Vancouver, there is also a more tangible, practical need for information about the location of recent crimes so as to ensure the most effective distribution of police resources. Without current information about crime hotspots, police may be focusing their energy in the wrong areas, putting public safety at risk.
+###F. Deliverable
+You have two options for creating your deliverable:
+- Submit a brief scientific report the follows the general flow of a scientific paper (Introduction, Methods, Results, Conclusion).&nbsp;
+- Submit a tutorial that walks a reader through all the steps you completed to perform this analysis.
 
-The objective of this analysis is to provide insight into the spatial distribution of bicycle thefts and mischief crimes in 2020 through several different point pattern analysis tests. Generally speaking, these statistical tests all aim to answer the the following questions:
+You have two options for how you submit your deliverable:
+- An PDF of a knitted R Markdown file&nbsp;
+- A GitHub webpage
 
-1. Are bicycle thefts and mischief crimes in Vancouver in 2020 randomly located?
-2. If the crimes being studied are not found to be randomly located, what spatial pattern do they have?
-3. If the data are clustered, where do those clusters occur?
+Whatever you choose, you must also submit your code and data, and we must be able to run your code with your data on our computer.&nbsp;
 
+###G. Data Processing
+You will be provided with R code for the following:
+- cleaning and mapping weather station data from PCIC
+- performing IDW and kriging
+- performing regression and geographically weighted regression
+
+This code will not be perfect, and you will need to fix multiple things to create professional looking outputs and accurate results. You are encouraged to utilize ChatGPT and/or Microsoft Pilot to learn how to best fix these issues. We will discuss how to do this effectively and responsibly in lecture.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 #####
