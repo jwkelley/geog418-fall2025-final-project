@@ -55,8 +55,8 @@ You will be provided with R code for the following:
 
 This code will not be perfect, and you will need to fix multiple things to create professional looking outputs and accurate results. You are encouraged to utilize ChatGPT and/or Microsoft Pilot to learn how to best fix these issues. We will discuss how to do this effectively and responsibly in lecture.
 
-## Code
-### Cleaning Your Climate Data
+# Code
+## Cleaning Your Climate Data
 You are responsible for downloading at least one climate/weather variable from PCIC's Weather Station Data Portal across multiple stations. It is recommended that you select a variable and station sources (e.g. EC = Environment Canada) so that you have a representation of points distributed across the province. You will also need to select an appropriate date range for your study. Do not include stations with no observations. Once you have selected your data, select the Station Data tab and check "Clip time series to filter data range". Download as a CSV. Please note that this will take a long time. Once complete, you should see a folder with multiple CSV files, each one pertaining to a different station. Before processing this data, download the stataion metadata by selecting the Station Metadata tab, select "By Station", and select download. 
 
 You will want to create a shapefile of your weather stations that contains your weather variable. Here is the code to do this:
@@ -84,7 +84,7 @@ csv_file_name <- "BC_AVG_TEMP.csv"
 write.csv(empty_data, file = csv_file_name, row.names = FALSE)
 ```
 
-You will have a CSV file for each weather station. You will need to perform some calculation on the data in each CSV. An easy way to do this is to use a for loop to run through every CSV file in a folder and apply the same statistics. Run through all csv files in folder to calculate an aggregate measure of temperature
+You will have a CSV file for each weather station. You will need to perform some calculation on the data in each CSV. An easy way to do this is to use a for loop to run through every CSV file in a folder and apply the same statistics. The code below runs through all csv files in folder to calculate an aggregate measure of temperature.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 #First, list all CSV files in the directory to make sure you are in the right folder
@@ -188,5 +188,50 @@ merged_data <- merged_data[merged_data$TEMP <= 100, ]
 
 #Write the dataset so that it  is stored
 write.csv(merged_data, file = "ClimateData.csv", row.names = FALSE)
+```
+We finish this last chunk of code by writing our ClimateData.csv file so that we have a copy saved. You can now use this dataset to create a shapefile of weather stations.
+
+## Creating a Shapefile and Mapping Climate Stations
+In this step you will open your ClimateData.csv file, create a shapefile, and then create a map of the data so you can see if the data has been cleaned as expected.
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+# Read the CSV file
+climate_data <- read.csv("ClimateData.csv")
+
+# Ensure Latitude and Longitude columns are correctly formatted
+# Assuming the columns are named "Latitude" and "Longitude"
+climate_data <- climate_data %>%
+  mutate(Latitude = as.numeric(Latitude),
+         Longitude = as.numeric(Longitude))
+
+# Create a simple feature object (sf) using Latitude and Longitude
+climate_sf <- st_as_sf(climate_data, coords = c("Longitude", "Latitude"), crs = 3005)
+
+# Optionally, you can select columns that you want to keep in the shapefile
+# climate_sf <- climate_sf %>% select(Your_Columns_Here)
+
+# Write the shapefile to disk
+st_write(climate_sf, "ClimateData.shp")
+
+# Confirmation message
+print("Shapefile has been created: ClimateData.shp")
+
+# Load the shapefiles
+climate_sf <- st_read("ClimateData.shp")
+bc_boundary <- st_read("ABMS_PROV_polygon.shp")
+
+# Create the map
+ggplot() +
+  geom_sf(data = bc_boundary, fill = "lightgrey", color = "black") +
+  # Map the TEMP variable to color
+  geom_sf(data = climate_sf, aes(color = TEMP), size = 2) + 
+  scale_color_gradient(low = "blue", high = "red") + # Adjust color gradient as needed
+  theme_minimal() +
+  labs(title = "Map of Climate Data Points in British Columbia",
+       subtitle = "Overlayed on BC Boundary",
+       x = "Longitude",  # Use Longitude for x-axis
+       y = "Latitude",   # Use Latitude for y-axis
+       color = "Temperature (°C)") + # Label for color legend
+  theme(legend.position = "bottom")
 ```
 
