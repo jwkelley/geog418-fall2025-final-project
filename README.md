@@ -55,8 +55,8 @@ You will be provided with R code for the following:
 
 This code will not be perfect, and you will need to fix multiple things to create professional looking outputs and accurate results. You are encouraged to utilize ChatGPT and/or Microsoft Pilot to learn how to best fix these issues. We will discuss how to do this effectively and responsibly in lecture.
 
-##Code
-###Cleaning Your Climate Data
+## Code
+### Cleaning Your Climate Data
 You are responsible for downloading at least one climate/weather variable from PCIC's Weather Station Data Portal across multiple stations. It is recommended that you select a variable and station sources (e.g. EC = Environment Canada) so that you have a representation of points distributed across the province. You will also need to select an appropriate date range for your study. Do not include stations with no observations. Once you have selected your data, select the Station Data tab and check "Clip time series to filter data range". Download as a CSV. Please note that this will take a long time. Once complete, you should see a folder with multiple CSV files, each one pertaining to a different station. Before processing this data, download the stataion metadata by selecting the Station Metadata tab, select "By Station", and select download. 
 
 You will want to create a shapefile of your weather stations that contains your weather variable. Here is the code to do this:
@@ -74,14 +74,10 @@ library(gstat)
 library(ggplot2)
 library(maps)
 
-
-
-#######
 ##Create an csv file. You will use this later to save your data
 # Create an empty data frame with specified columns
 empty_data <- data.frame(Native.ID = character(), TEMP = numeric(), 
                          Longitude = numeric(), Latitude = numeric(), stringsAsFactors = FALSE)
-
 csv_file_name <- "BC_AVG_TEMP.csv"
 
 # Write the empty data frame to a CSV file
