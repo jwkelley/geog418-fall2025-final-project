@@ -1,55 +1,22 @@
-# Geog 418 Final Project
+# Geog 418 Final Project Code
 
-Welcome to your final project for Geog 418. This project will provide you with an opportunity to utilize the skills gained in the first half of this course along with some new ones to provide a spatial analysis of climate-driven events in British Columbia.&nbsp;
+This document contains all the code you will need to complete for final project except for the code you have already used in Assignmnets 1-3. The code is divided into sections based on the major tasks you need to complete for the project:
 
-## Learning Outcomes
-After completing this project, you will be able to:
-- Download and clean climate data and create spatially interpolated surfaces
-- Perform geographically weighted regression to estimate the influence of climate on natural events
-- Utilize all spatial analysis methods used in this course
-- Employ ChatGPT or Microsoft Pilot for solving coding problems
+1. Cleaning your climate data
+2. Mapping your climate data
+3. Spatial interpolation of your climate data
+4. Creating a density map of your events data
+5. Combining your climate and events data
+6. Performing an ordinary least squres regression
+7. Perfroming a geographically weighted regression
 
+Note that you are not provide with code to perform descriptive statistics, spatial descriptive statistics, and point pattern analysis. You should perform these analyses on your input data to provide some context to your study. In addition, you are not provided with code for performing a Global Moran's I test, which you should be performing on the residuals from your OLS regression to evaluate if you are negating any important statistical assumptions (i.e. independence of errors).
 
-## Instructions
-### A. Define Your Topic
-
-You must select a topic that allows you to perform an analysis on two variables: (1) point locations of some climate-mediated event (e.g. wildfires, landslides, deaths to heat exposure), and (2) climate data from point locations such as weather stations. For example, you could analyze how the number of days of 25 degrees Celsius influences wildfire occurrence. It is recommended that your project focus on the province of British Columbia.
-
-### B. Collect and Analyze Point Data of Climate-Driven Event
-
-Collect point data for your "events" variable (e.g. wildfires, landslides, etc.). It is recommended that you search the BC Data Catalogue for this dataset unless you know of other credible sources. Apply descriptive statistics, spatial descriptive statistics, and point pattern analysis to describe the nature of these events for a specific timeframe.
-
-### C. Collect and Process Climate Data
-Collect point data for your climate variable (e.g. mean temperature, min temperature, daily maximum precipitation, etc.). This data must be point data. It is recommended that you collect this data from the Weather Station Data Portal from the Pacific Climate Impacts Consortium (PCIC).
-
-Clean this data so that you have each weather station represented by a single value for a specific variable. For example, if you are interested in the influence of temperature on wildfires, you will want to download daily or monthly temperatures and clean the data to provide a single value, such as mean temperature during the wildfire season, average minimum daily temperature, etc.
-
-### D. Create Spatially Interpolated Climate Surfaces
-Once your data is cleaned, perform both inverse distance weighting and kriging to create spatially interpolated surfaces of your climate data. As part of your analysis you should evaluate the quality of each method based on the objective of your analysis.
-
-### E. Estimate Influence of Climate on Event Occurrence
-Perform a regression analysis to determine the degree to which your climate variable is able to explain the variability in your event occurrence. Perform a test of spatial autocorrelation on the residuals from your regression model to determine if your analysis is negating a primary assumption with performing a regression analysis.&nbsp;
-
-You will likely find the you are negating a primary assumption, which will lead you to perform a geographically weighted regression. From this analysis, make conclusions about the influence of climate on your events.
-
-### F. Deliverable
-You have two options for creating your deliverable:
-- Submit a brief scientific report the follows the general flow of a scientific paper (Introduction, Methods, Results, Conclusion).&nbsp;
-- Submit a tutorial that walks a reader through all the steps you completed to perform this analysis.
-
-You have two options for how you submit your deliverable:
-- An PDF of a knitted R Markdown file&nbsp;
-- A GitHub webpage
-
-Whatever you choose, you must also submit your code and data, and we must be able to run your code with your data on our computer.&nbsp;
-
-### G. Data Processing
-You will be provided with R code for the following:
-- cleaning and mapping weather station data from PCIC
-- performing IDW and kriging
-- performing regression and geographically weighted regression
-
-This code will not be perfect, and you will need to fix multiple things to create professional looking outputs and accurate results. You are encouraged to utilize ChatGPT and/or Microsoft Pilot to learn how to best fix these issues. We will discuss how to do this effectively and responsibly in lecture.
+Before you move on to the code, please read over these tips to make your life easier:
+- Make sure you are replacing file names with those that are relevant to your data
+- Each chunk of code ends with printing a shapefile and/or csv file, and each subequent chunk begins with reading that specific file. The reason we do this is so that you do not need to re-run all your code to run a specific chunk. However, this requires you to make sure that you are using consistent file names when printing and reading these files (this should make more sense when you look at the code).
+- You are responsible for setting values for the resolution of your datasets (e.g. your interpolated surface and density map). You should make sure your selected resolution makes sense given the phenomenon you are investigating and given the methods you are using. Also, you should ensure that you are using a consistent resolution for your different methods.
+- Finally, this is a challenging project with no single right outcome. It is your responsibility to get your code to work as best as possible and provide a write-up based on the intstructions in Brightspace that best descirbes the work you accomplished. Be critical of the methods you use and the results you obtain, and clearly articulate your findings and what the reader needs to be aware of when understanding your work.
 
 # Code
 ## Cleaning Your Climate Data
