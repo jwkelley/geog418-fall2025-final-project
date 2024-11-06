@@ -2,7 +2,7 @@
 
 This document contains all the code you will need to complete for final project except for the code you have already used in Assignmnets 1-3. The code is divided into sections based on the major tasks you need to complete for the project:
 
-[Go to Section](#Cleaning Your Climate Data)
+[Go to Section](#Cleaning your climate data)
 Cleaning Your Climate Data
 - [Introduction](#introduction)
 1. [Cleaning your climate data](#cleaning Your Climate Data)
