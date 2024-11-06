@@ -22,7 +22,6 @@ You must select a topic that allows you to perform an analysis on two variables:
 
 Collect point data for your "events" variable (e.g. wildfires, landslides, etc.). It is recommended that you search the BC Data Catalogue for this dataset unless you know of other credible sources. Apply descriptive statistics, spatial descriptive statistics, and point pattern analysis to describe the nature of these events for a specific timeframe.
 
-
 ### C. Collect and Process Climate Data
 Collect point data for your climate variable (e.g. mean temperature, min temperature, daily maximum precipitation, etc.). This data must be point data. It is recommended that you collect this data from the Weather Station Data Portal from the Pacific Climate Impacts Consortium (PCIC).
 
@@ -235,6 +234,18 @@ ggplot() +
   theme(legend.position = "bottom")
 ```
 
+
+## Interpolating your Weather Station Data
+In this section you will create an interpolated surface.........
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+
+
+```
+
+
+
 ## Create Density Dataset of Point Events
 In this section you will create a raster dataset of the density of points per unity area across the province. You will convert your point shapefile into a density raster showing the number of events per raster cell. Be mindful that the resolution you select here should match the resolution of your spatial interpolation outputs.
 
@@ -300,4 +311,13 @@ ggplot() +
   labs(title = "Density of Fires within Boundary",
        x = "Longitude",
        y = "Latitude")
+```
+
+## Combining your Climate and 
+In this section you will create an interpolated surface.........
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+
+
 ```
