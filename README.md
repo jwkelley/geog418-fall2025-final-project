@@ -9,7 +9,7 @@ Cleaning Your Climate Data
 3. [Spatial interpolation of your climate data](#spatial-interpolation-of-your-climate-data)
 4. [Creating a density map of your events data](#creating-a-density-map-of-your-events-data)
 5. [Combining your climate and events data](#combining-your-climate-and-events-data)
-6. [Performing ordinary least squares regression](#performing-ordinary-least-squares-regression)
+6. [Performing ordinary least squares regression](#performing-oridnary-least-squares-regression)
 7. [Performing geographically weighted regression](#performing-geographically-weighted-regression)
 
 Note that you are not provide with code to perform descriptive statistics, spatial descriptive statistics, and point pattern analysis. You should perform these analyses on your input data to provide some context to your study. In addition, you are not provided with code for performing a Global Moran's I test, which you should be performing on the residuals from your OLS regression to evaluate if you are negating any important statistical assumptions (i.e. independence of errors).
