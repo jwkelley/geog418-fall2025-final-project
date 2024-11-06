@@ -27,35 +27,33 @@ You are responsible for downloading at least one climate/weather variable from P
 You will want to create a shapefile of your weather stations that contains your weather variable. Here is the code to do this:
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-
-#You may or may not need all these libraries
-library(tmap)
+#Here are many of the libraries you will need. You may need to add more if your receive an error message saying that a specific function cannot be found.
 library(spdep)
 library(raster)
 library(sf)
-library(lubridate)
 library(dplyr)
 library(gstat)
 library(ggplot2)
-library(maps)
+library(spgwr)
 
-##Create an csv file. You will use this later to save your data
-# Create an empty data frame with specified columns
+
+
+# Create an empty data frame with specified columns. You will use this to write your weather station to when you want to combine your climate variables with the coordinates contained in the metadata.
 empty_data <- data.frame(Native.ID = character(), TEMP = numeric(), 
                          Longitude = numeric(), Latitude = numeric(), stringsAsFactors = FALSE)
-csv_file_name <- "BC_AVG_TEMP.csv"
+csv_file_name <- "BC_AVG_TEMP.csv" #We are giving the file this name as an example of calculating average temperatures in BC.
 
 # Write the empty data frame to a CSV file
-write.csv(empty_data, file = csv_file_name, row.names = FALSE)
+write.csv(empty_data, file = csv_file_name, row.names = FALSE) #We will call this file later. 
 ```
 
 You will have a CSV file for each weather station. You will need to perform some calculation on the data in each CSV. An easy way to do this is to use a for loop to run through every CSV file in a folder and apply the same statistics. The code below runs through all csv files in folder to calculate an aggregate measure of temperature.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-#First, list all CSV files in the directory to make sure you are in the right folder
+#First, list all CSV files in the directory to make sure you are in the right folder. The folder we are looking at here is called BCH as this is the weather station network from which the data was obtained in PCIC.
 csv_files <- list.files(path = "./Data/BCH", pattern = "\\.csv$", full.names = TRUE)
 
-#Next, loop through each CSV file and perform your calculations.
+#Next, loop through each CSV file and perform your calculations to calculate something about this variable. Here we calculate daily, montly, and season average temperatures. 
 for (file in csv_files) {
 
 #Read each file
@@ -249,9 +247,6 @@ print(head(abms_prov_polygon))
 crs_idw <- st_crs(idw_sf)  # CRS of IDW result
 crs_polygon <- st_crs(abms_prov_polygon)  # CRS of the polygon shapefile
 
-print(crs_idw)
-print(crs_polygon)
-
 # Step to transform the CRS of either shapefile if they do not match
 if (crs_idw != crs_polygon) {
   # Transform the IDW result to match the CRS of the polygon
@@ -266,7 +261,6 @@ idw_clipped <- st_intersection(idw_sf, abms_prov_polygon)
 
 # Check the results of clipping
 print(st_geometry(idw_clipped))  # Check geometry to ensure it's clipped correctly
-
 
 #Create the map of the clipped results
 ggplot(data = idw_clipped) +
@@ -337,14 +331,14 @@ tm_shape(predicted_raster) +
 In this section you will create a raster dataset of the density of points per unity area across the province. You will convert your point shapefile into a density raster showing the number of events per raster cell. Be mindful that the resolution you select here should match the resolution of your spatial interpolation outputs.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-# Load your point data (make sure to adjust the path)
+# Load your point data (make sure to adjust the path). Here we use a wildfire dataset from the BC Data Catoluge called C_FIRE_PNT_point and our BC Boundary file.
 C_FIRE_PNT_point <- st_read("C_FIRE_PNT_point.shp")
 abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
 
 # Ensure bbox2 is valid and formatted correctly
 bbox2 <- st_bbox(abms_prov_polygon)
 
-raster_res <- 50000  # 50 km in meters
+raster_res <- 100000  # This resolution in 100000 meters 
 raster_template <- raster(extent(bbox2), res = c(raster_res, raster_res))
 
 # Estimate density using kernel density estimate
@@ -443,23 +437,23 @@ In this section you will perform an Ordinary Least Squares Regression to assess 
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 
-# Step 1: Read the shapefile
+# Read the shapefile
 final_data_sf <- st_read("final_data.shp")
 
-# Step 2: Fit the OLS regression model on the entire spatial data
+# Fit the OLS regression model on the entire spatial data
 # Use "temprtr" instead of "temperature"
 ols_model <- lm(fires ~ temprtr, data = final_data_sf)
 
-# Step 3: Add residuals to the original spatial data frame
+# Add residuals to the original spatial data frame
 final_data_sf$residuals <- resid(ols_model)
 
-# Step 4: Inspect the updated spatial object to verify residuals are added
+# Inspect the updated spatial object to verify residuals are added
 print(head(final_data_sf))
 
-# Step 5: (Optional) Save the updated shapefile with residuals
+# (Optional) Save the updated shapefile with residuals
 st_write(final_data_sf, "final_data_with_residuals.shp", delete_dsn = TRUE)
 
-# Step 6: Create a map of residuals from the OLS regression
+# Create a map of residuals from the OLS regression
 ggplot(data = final_data_sf) +
   geom_sf(aes(fill = residuals)) + # Map the residuals to fill color
   scale_fill_viridis_c(option = "C", name = "Residuals") + # Use a color scale
@@ -475,7 +469,7 @@ ggsave("residuals_map.png", width = 10, height = 8, dpi = 300)
 ## Performing Geographically Weighted Regression
 In this section you will perform Geographically Weighted Regression to assess if your climate variable is able to explain the variability in the density of events at local scales. 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-# Read the multipolygon shapefile (with residuals included)
+# Read the shapefile (with residuals included)
 final_data_sf <- st_read("final_data.shp")
 
 # Preview the data to check variable names and content
@@ -528,27 +522,15 @@ print(summary(gwr_model_fixed))
 # Extract coefficients and create a dataframe for visualization
 gwr_results_fixed <- as.data.frame(gwr_model_fixed$SDF)
 
-# Step 11: Check the GWR results and confirm the structure
-print(head(gwr_results_fixed))  # Display first few rows to inspect
-print(colnames(gwr_results_fixed))  # Verify the column names in the GWR output
-
-# Step 12: Extracting coordinates from the original spatial data
+# Extract coordinates from the original spatial data
 coordinates_fixed <- st_coordinates(final_data_sf)  # Get coordinates from the original data
 
-# Check the structure of the coordinates
-print(head(coordinates_fixed))  # Show first few coordinates
-print(dim(coordinates_fixed))    # Confirm dimensions
-
-# Step 13: Combine the GWR results with the coordinates
+# Combine the GWR results with the coordinates
 # Assuming GWR results correspond directly (else we may need to adjust identifiers),
 # Make sure to bind them under the known column names for proper mapping.
 gwr_results_fixed <- cbind(gwr_results_fixed, coordinates_fixed)
 
-# Check the structure of combined results
-print(colnames(gwr_results_fixed))  # Check if columns are correct
-print(head(gwr_results_fixed))       # Check combined result head
-
-# Now convert to an sf object for visualization
+# Convert to an sf object for visualization
 # Adjusting the coordinate column names based on what exists in gwr_results_fixed
 # Normally, standard output names would have been “coords.X1” and “coords.Y” or similar
 gwr_output_sf_fixed <- st_as_sf(gwr_results_fixed, coords = c("X", "Y"), crs = st_crs(final_data_sf))
