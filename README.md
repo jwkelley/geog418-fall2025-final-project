@@ -1,8 +1,11 @@
 # Geog 418 Final Project Code
 
 This document contains all the code you will need to complete for final project except for the code you have already used in Assignmnets 1-3. The code is divided into sections based on the major tasks you need to complete for the project:
+
 [Go to Section](#Cleaning Your Climate Data)
-1. Cleaning your climate data
+Cleaning Your Climate Data
+- [Introduction](#introduction)
+1. [Cleaning your climate data](##Cleaning Your Climate Data)
 2. Mapping your climate data
 3. Spatial interpolation of your climate data
 4. Creating a density map of your events data
