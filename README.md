@@ -9,8 +9,8 @@ Cleaning Your Climate Data
 3. [Spatial interpolation of your climate data](#spatial-interpolation-of-your-climate-data)
 4. [Creating a density map of your events data](#creating-a-density-map-of-your-events-data)
 5. [Combining your climate and events data](#combining-your-climate-and-events-data)
-6. [Performing an ordinary least squres regression](#performing-an-ordinary-least-squares-regression)
-7. [Perfroming a geographically weighted regression](#performing-a-geographically-weighted-regression)
+6. [Performing ordinary least squres regression](#performing-an-ordinary-least-squares-regression)
+7. [Perfroming geographically weighted regression](#performing-a-geographically-weighted-regression)
 
 Note that you are not provide with code to perform descriptive statistics, spatial descriptive statistics, and point pattern analysis. You should perform these analyses on your input data to provide some context to your study. In addition, you are not provided with code for performing a Global Moran's I test, which you should be performing on the residuals from your OLS regression to evaluate if you are negating any important statistical assumptions (i.e. independence of errors).
 
@@ -472,7 +472,7 @@ ggplot(data = final_data_sf) +
 ggsave("residuals_map.png", width = 10, height = 8, dpi = 300)
 ```
 
-## Performing a Geographically Weighted Regression
+## Performing Geographically Weighted Regression
 In this section you will perform Geographically Weighted Regression to assess if your climate variable is able to explain the variability in the density of events at local scales. 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 # Read the multipolygon shapefile (with residuals included)
