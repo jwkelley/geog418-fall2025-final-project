@@ -1,7 +1,4 @@
-# geog418-fall2024-final-project
-Final Project Instructions and Code
-
-
+# Geog 418 Final Project
 
 Welcome to your final project for Geog 418. This project will provide you with an opportunity to utilize the skills gained in the first half of this course along with some new ones to provide a spatial analysis of climate-driven events in British Columbia.&nbsp;
 
