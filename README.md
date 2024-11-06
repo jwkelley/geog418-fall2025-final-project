@@ -435,29 +435,168 @@ ggplot() +
        y = "Latitude")
 ```
 
-## Combining your Climate and 
-In this section you will create an interpolated surface.........
+## Combining your Climate and Events Data
+In this section you will combine the Climate and Events data by adding the density values from the Events dataset to the polygons in the interpolated surface.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+# Perform the spatial join
+joined_data <- st_join(idw_clipped, density_sf, join = st_intersects)
 
+# Select needed columns
+final_data <- joined_data[, c("var1.pred", "fires")]
 
+# Rename column
+final_data <- final_data %>%
+  rename(temperature = var1.pred)
 
+# Replace NA values in the fires column with 0
+final_data <- final_data %>%
+  mutate(fires = ifelse(is.na(fires), 0, fires))
+
+# Create the map
+ggplot(data = final_data) +
+  geom_sf(aes(fill = fires)) +
+  scale_fill_viridis_c(option = "C") +
+  theme_minimal() +
+  labs(title = "Temperature Map",
+       fill = "Temperature (°C)") +
+  theme(legend.position = "right")
+
+# Save final_data as a shapefile
+st_write(final_data, "final_data.shp", delete_dsn = TRUE)
+
+# Convert final_data to a data frame
+final_data_df <- st_drop_geometry(final_data)
+
+# Write as CSV
+write.csv(final_data_df, "final_data.csv", row.names = FALSE)
 ```
 
-## Combining your Climate and 
-In this section you will create an interpolated surface.........
+## Performing Oridnary Least Squares Regression
+In this section you will perform an Ordinary Least Squares Regression to assess if your climate variable is able to explain the variability in the density of events at a "global" scale.
+
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 
+# Step 1: Read the shapefile
+final_data_sf <- st_read("final_data.shp")
 
+# Step 2: Fit the OLS regression model on the entire spatial data
+# Use "temprtr" instead of "temperature"
+ols_model <- lm(fires ~ temprtr, data = final_data_sf)
 
+# Step 3: Add residuals to the original spatial data frame
+final_data_sf$residuals <- resid(ols_model)
+
+# Step 4: Inspect the updated spatial object to verify residuals are added
+print(head(final_data_sf))
+
+# Step 5: (Optional) Save the updated shapefile with residuals
+st_write(final_data_sf, "final_data_with_residuals.shp", delete_dsn = TRUE)
+
+# Step 6: Create a map of residuals from the OLS regression
+ggplot(data = final_data_sf) +
+  geom_sf(aes(fill = residuals)) + # Map the residuals to fill color
+  scale_fill_viridis_c(option = "C", name = "Residuals") + # Use a color scale
+  theme_minimal() +
+  labs(title = "Map of Residuals from OLS Regression",
+       fill = "Residuals") +
+  theme(legend.position = "right")
+
+# Optional: Save the plot if desired
+ggsave("residuals_map.png", width = 10, height = 8, dpi = 300)
 ```
 
-## Combining your Climate and 
-In this section you will create an interpolated surface.........
-
+## Performing Geographically Weighted Regression
+In this section you will perform Geographically Weighted Regression to assess if your climate variable is able to explain the variability in the density of events at local scales. 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+# Read the multipolygon shapefile (with residuals included)
+final_data_sf <- st_read("final_data.shp")
 
+# Preview the data to check variable names and content
+print(head(final_data_sf))
+print(colnames(final_data_sf))
 
+# Convert the sf object to Spatial object
+final_data_sp <- as_Spatial(final_data_sf)
+
+# Create neighborhood structure
+neighbors <- poly2nb(final_data_sp, queen = TRUE)
+
+# Check neighbors for any issues
+print(summary(neighbors))
+
+# Check for any empty neighbors
+if (any(sapply(neighbors, length) == 0)) {
+  warning("Some polygons have no neighbors. This may cause issues for GWR.")
+}
+
+# Prepare the dependent and independent variables
+dependent_var <- final_data_sp@data$fires
+independent_vars <- final_data_sp@data$temprtr
+
+# Check if both variables are numeric
+if (!is.numeric(dependent_var) || !is.numeric(independent_vars)) {
+  stop("Dependent and independent variables must be numeric.")
+}
+
+# Run GWR with a fixed bandwidth of 200 km
+fixed_bandwidth <- 200000  # Bandwidth in meters (200 km)
+
+gwr_model_fixed <- gwr(dependent_var ~ independent_vars, 
+                       data = final_data_sp, 
+                       bandwidth = fixed_bandwidth, 
+                       se.fit = TRUE)
+
+# Validate that the model ran successfully
+if (is.null(gwr_model_fixed)) {
+  stop("The GWR model did not return any results.")
+}
+
+if (is.null(gwr_model_fixed$SDF)) {
+  stop("The GWR model SDF is NULL, indicating it might not have calculated properly.")
+}
+
+# Print GWR summary
+print(summary(gwr_model_fixed))
+
+# Extract coefficients and create a dataframe for visualization
+gwr_results_fixed <- as.data.frame(gwr_model_fixed$SDF)
+
+# Step 11: Check the GWR results and confirm the structure
+print(head(gwr_results_fixed))  # Display first few rows to inspect
+print(colnames(gwr_results_fixed))  # Verify the column names in the GWR output
+
+# Step 12: Extracting coordinates from the original spatial data
+coordinates_fixed <- st_coordinates(final_data_sf)  # Get coordinates from the original data
+
+# Check the structure of the coordinates
+print(head(coordinates_fixed))  # Show first few coordinates
+print(dim(coordinates_fixed))    # Confirm dimensions
+
+# Step 13: Combine the GWR results with the coordinates
+# Assuming GWR results correspond directly (else we may need to adjust identifiers),
+# Make sure to bind them under the known column names for proper mapping.
+gwr_results_fixed <- cbind(gwr_results_fixed, coordinates_fixed)
+
+# Check the structure of combined results
+print(colnames(gwr_results_fixed))  # Check if columns are correct
+print(head(gwr_results_fixed))       # Check combined result head
+
+# Now convert to an sf object for visualization
+# Adjusting the coordinate column names based on what exists in gwr_results_fixed
+# Normally, standard output names would have been “coords.X1” and “coords.Y” or similar
+gwr_output_sf_fixed <- st_as_sf(gwr_results_fixed, coords = c("X", "Y"), crs = st_crs(final_data_sf))
+
+# Plotting GWR coefficients with the fixed bandwidth
+ggplot(data = gwr_output_sf_fixed) +
+  geom_sf(aes(fill = Estimate), color = NA) +
+  scale_fill_viridis_c(option = "C") +
+  labs(title = "GWR Coefficients with Fixed Bandwidth of 200 km",
+       fill = "GWR Estimate") +
+  theme_minimal()
+
+# Optional: Save the plot
+ggsave("gwr_coefficients_fixed_bandwidth.png", width = 10, height = 8, dpi = 300)
 
 ```
