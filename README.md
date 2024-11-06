@@ -238,7 +238,7 @@ st_write(idw_sf, "IDW_Result.shp", driver = "ESRI Shapefile", delete_dsn = TRUE)
 We will now clip the IDW results to the BC bounday.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-# Step 1: Load the polygon shapefile for clipping
+# Load the polygon shapefile for clipping
 abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
 
 # Verify the structure of the polygon shapefile
@@ -247,7 +247,7 @@ print(head(abms_prov_polygon))
 crs_idw <- st_crs(idw_sf)  # CRS of IDW result
 crs_polygon <- st_crs(abms_prov_polygon)  # CRS of the polygon shapefile
 
-# Step to transform the CRS of either shapefile if they do not match
+# Transform the CRS of either shapefile if they do not match
 if (crs_idw != crs_polygon) {
   # Transform the IDW result to match the CRS of the polygon
   idw_sf <- st_transform(idw_sf, crs = crs_polygon)  # Transform IDW result to polygon's CRS
