@@ -4,7 +4,7 @@ This document contains all the code you will need to complete for final project 
 
 [Go to Section](#Cleaning your climate data)
 Cleaning Your Climate Data
-1. [Cleaning your climate data](#introduction)
+1. [Cleaning your climate data](#cleaning your climate data)
 2. Mapping your climate data
 3. Spatial interpolation of your climate data
 4. Creating a density map of your events data
