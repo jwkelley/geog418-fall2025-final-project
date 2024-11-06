@@ -5,12 +5,12 @@ This document contains all the code you will need to complete for final project 
 [Go to Section](#Cleaning your climate data)
 Cleaning Your Climate Data
 1. [Cleaning your climate data](#cleaning-your-climate-data)
-2. Mapping your climate data
-3. Spatial interpolation of your climate data
-4. Creating a density map of your events data
-5. Combining your climate and events data
-6. Performing an ordinary least squres regression
-7. Perfroming a geographically weighted regression
+2. [Mapping your climate data](#mapping-your-climate-data)
+3. [Spatial interpolation of your climate data](#spatial-interpolation-of-your-climate-data)
+4. [Creating a density map of your events data](#creating-a-density-map-of-your-events-data)
+5. [Combining your climate and events data](#combining-your-climate-and-events-data)
+6. [Performing an ordinary least squres regression](#performing-an-ordinary-least-squares-regression)
+7. [Perfroming a geographically weighted regression](#performing-a-geographically-weighted-regression)
 
 Note that you are not provide with code to perform descriptive statistics, spatial descriptive statistics, and point pattern analysis. You should perform these analyses on your input data to provide some context to your study. In addition, you are not provided with code for performing a Global Moran's I test, which you should be performing on the residuals from your OLS regression to evaluate if you are negating any important statistical assumptions (i.e. independence of errors).
 
@@ -156,7 +156,7 @@ write.csv(merged_data, file = "ClimateData.csv", row.names = FALSE)
 ```
 We finish this last chunk of code by writing our ClimateData.csv file so that we have a copy saved. You can now use this dataset to create a shapefile of weather stations.
 
-## Creating a Shapefile and Mapping Climate Stations
+## Mapping your Climate Data
 In this step you will open your ClimateData.csv file, create a shapefile, and then create a map of the data so you can see if the data has been cleaned as expected.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
@@ -201,15 +201,14 @@ ggplot() +
 ```
 
 
-## Interpolating Your Weather Station Data
+## Spatial Interpolation of Your Climate Data
 In this section you will create an interpolated surface of your weather data variable. You can use either inverse distance weighting or kriging to accomplish, or use both methods and compare the results between them.
-### Inverse Distance Weighting
 
+### Inverse Distance Weighting
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 #Read the shapefile
 climate_data <- st_read("ClimateData.shp")
 abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
-
 
 #Create a grid for the interpolation. Adjust the extent and resolution of the grid according to your needs
 bbox <- st_bbox(abms_prov_polygon)
@@ -334,7 +333,7 @@ tm_shape(predicted_raster) +
   tm_scale_bar()
 ```
 
-## Create Density Dataset of Point Events
+## Creating a Density Map of Your Events Data
 In this section you will create a raster dataset of the density of points per unity area across the province. You will convert your point shapefile into a density raster showing the number of events per raster cell. Be mindful that the resolution you select here should match the resolution of your spatial interpolation outputs.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
@@ -401,7 +400,7 @@ ggplot() +
        y = "Latitude")
 ```
 
-## Combining your Climate and Events Data
+## Combining Your Climate and Events Data
 In this section you will combine the Climate and Events data by adding the density values from the Events dataset to the polygons in the interpolated surface.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
@@ -473,7 +472,7 @@ ggplot(data = final_data_sf) +
 ggsave("residuals_map.png", width = 10, height = 8, dpi = 300)
 ```
 
-## Performing Geographically Weighted Regression
+## Performing a Geographically Weighted Regression
 In this section you will perform Geographically Weighted Regression to assess if your climate variable is able to explain the variability in the density of events at local scales. 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 # Read the multipolygon shapefile (with residuals included)
