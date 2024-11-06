@@ -235,16 +235,138 @@ ggplot() +
 ```
 
 
-## Interpolating your Weather Station Data
-In this section you will create an interpolated surface.........
+## Interpolating Your Weather Station Data
+In this section you will create an interpolated surface of your weather data variable. You can use either inverse distance weighting or kriging to accomplish, or use both methods and compare the results between them.
+### Inverse Distance Weighting
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+#Read the shapefile
+climate_data <- st_read("ClimateData.shp")
+abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
 
 
+#Create a grid for the interpolation. Adjust the extent and resolution of the grid according to your needs
+bbox <- st_bbox(abms_prov_polygon)
+grid <- st_make_grid(st_as_sfc(bbox), cellsize = c(50000, 50000))  # Adjust the cell size
+
+#Interpolate using IDW
+idw_result <- gstat::idw(TEMP ~ 1, 
+                         locations = climate_data, 
+                         newdata = st_as_sf(grid), 
+                         idp = 2)
+
+#Convert idw_result to an sf object
+idw_sf <- st_as_sf(idw_result)
+
+#Extract coordinates 
+idw_sf <- st_as_sf(idw_result)
+
+#Plot the results using geom_sf() for better handling of sf objects
+ggplot(data = idw_sf) +
+  geom_sf(aes(fill = var1.pred), color = NA) +  # Fill based on predicted values
+  scale_fill_viridis_c() +
+  labs(title = "IDW Interpolation of Temperature", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+#Save the result to a shapefile if needed
+st_write(idw_sf, "IDW_Result.shp", driver = "ESRI Shapefile", delete_dsn = TRUE)
+
+
+#########################################
+
+# Step 1: Load the polygon shapefile for clipping
+abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
+
+# Verify the structure of the polygon shapefile
+print(head(abms_prov_polygon))
+# Check the CRS of both objects
+crs_idw <- st_crs(idw_sf)  # CRS of IDW result
+crs_polygon <- st_crs(abms_prov_polygon)  # CRS of the polygon shapefile
+
+print(crs_idw)
+print(crs_polygon)
+
+# Step to transform the CRS of either shapefile if they do not match
+if (crs_idw != crs_polygon) {
+  # Transform the IDW result to match the CRS of the polygon
+  idw_sf <- st_transform(idw_sf, crs = crs_polygon)  # Transform IDW result to polygon's CRS
+  message("Transformed IDW result CRS to match the polygon.")
+} else {
+  message("CRS of IDW result and polygon already match.")
+}
+
+# Now attempt the intersection again
+idw_clipped <- st_intersection(idw_sf, abms_prov_polygon)
+
+# Check the results of clipping
+print(st_geometry(idw_clipped))  # Check geometry to ensure it's clipped correctly
+
+
+#Create the map of the clipped results
+ggplot(data = idw_clipped) +
+  geom_sf(aes(fill = var1.pred), color = NA) +  # Fill based on predicted temperature values
+  scale_fill_viridis_c(option = "D") +  # Use viridis color scale for better readability
+  labs(title = "Clipped IDW Interpolation of Temperature",
+       fill = "Temperature (°C)",  # Change label as appropriate
+       x = "Longitude", 
+       y = "Latitude") +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+#Save the map as an image file (optional)
+ggsave("Clipped_IDW_Interpolation_Map.png", width = 10, height = 8, dpi = 300)
 
 ```
 
+### Kriging
 
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Read the shapefile
+climate_data <- st_read("ClimateData.shp")
+
+f.0 <- as.formula(TEMP ~ 1) 
+
+# Create variogram. Be sure to test out the three different models.
+var.smpl <- variogram(f.0, climate_data, cloud = FALSE) 
+dat.fit  <- fit.variogram(var.smpl, fit.ranges = TRUE, fit.sills = TRUE,
+                          vgm(model="Sph", nugget = 8, psill = 20, 
+                              range = 400000))
+plot(var.smpl, dat.fit)
+
+# Define the grid
+xmin <- st_bbox(climate_data)$xmin
+xmax <- st_bbox(climate_data)$xmax
+ymin <- st_bbox(climate_data)$ymin
+ymax <- st_bbox(climate_data)$ymax
+
+# Create a regular grid
+n <- 50000  # Number of points
+grd <- st_as_sf(expand.grid(x = seq(xmin, xmax, length.out = sqrt(n)),
+                            y = seq(ymin, ymax, length.out = sqrt(n))),
+                coords = c("x", "y"), crs = st_crs(climate_data))
+
+dat.krg <- krige(f.0, climate_data, grd, dat.fit, debug.level=0)
+
+# Convert the kriging output to an sf object
+kriging_results_sf <- st_as_sf(dat.krg)
+
+# Create a Raster from Kriging Results
+# 1. Convert to a data frame with coordinates for raster creation
+coords_df <- as.data.frame(st_coordinates(kriging_results_sf))
+coords_df$predicted_temp <- kriging_results_sf$var1.pred  # Replace with your prediction column
+
+# 2. Create the raster from the resulting data frame
+predicted_raster <- rasterFromXYZ(coords_df)
+
+# Visualize the raster
+tm_shape(predicted_raster) +
+  tm_raster(palette = "viridis", title = "Predicted Temperature") +
+  tm_layout(title = "Kriging Results for Temperature") +
+  tm_compass(position = c("right", "top")) +
+  tm_scale_bar()
+```
 
 ## Create Density Dataset of Point Events
 In this section you will create a raster dataset of the density of points per unity area across the province. You will convert your point shapefile into a density raster showing the number of events per raster cell. Be mindful that the resolution you select here should match the resolution of your spatial interpolation outputs.
@@ -311,6 +433,24 @@ ggplot() +
   labs(title = "Density of Fires within Boundary",
        x = "Longitude",
        y = "Latitude")
+```
+
+## Combining your Climate and 
+In this section you will create an interpolated surface.........
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+
+
+```
+
+## Combining your Climate and 
+In this section you will create an interpolated surface.........
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+
+
 ```
 
 ## Combining your Climate and 
