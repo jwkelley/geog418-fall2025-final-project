@@ -234,10 +234,10 @@ ggplot(data = idw_sf) +
 
 #Save the result to a shapefile if needed
 st_write(idw_sf, "IDW_Result.shp", driver = "ESRI Shapefile", delete_dsn = TRUE)
+```
+We will now clip the IDW results to the BC bounday.
 
-
-#########################################
-
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 # Step 1: Load the polygon shapefile for clipping
 abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
 
