@@ -10,13 +10,13 @@ This document contains all the code you will need to complete for final project 
 6. [Performing ordinary least squares regression](#performing-oridnary-least-squares-regression)
 7. [Performing geographically weighted regression](#performing-geographically-weighted-regression)
 
-Note that you are not provide with code to perform descriptive statistics, spatial descriptive statistics, and point pattern analysis. You should perform these analyses on your input data to provide some context to your study. In addition, you are not provided with code for performing a Global Moran's I test, which you should be performing on the residuals from your OLS regression to evaluate if you are negating any important statistical assumptions (i.e. independence of errors).
+Note that you are not provided with code to perform descriptive statistics, spatial descriptive statistics, and point pattern analysis. You should perform these analyses on your input data to provide some context to your study. In addition, you are not provided with code for performing a Global Moran's I test, which you should be performing on the residuals from your OLS regression to evaluate if you are negating any important statistical assumptions (i.e. independence of errors).
 
 Before you move on to the code, please read over these tips to make your life easier:
 - Make sure you are replacing file names with those that are relevant to your data
 - Each chunk of code ends with printing a shapefile and/or csv file, and each subequent chunk begins with reading that specific file. The reason we do this is so that you do not need to re-run all your code to run a specific chunk. However, this requires you to make sure that you are using consistent file names when printing and reading these files (this should make more sense when you look at the code).
 - You are responsible for setting values for the resolution of your datasets (e.g. your interpolated surface and density map). You should make sure your selected resolution makes sense given the phenomenon you are investigating and given the methods you are using. Also, you should ensure that you are using a consistent resolution for your different methods.
-- Finally, this is a challenging project with no single right outcome. It is your responsibility to get your code to work as best as possible and provide a write-up based on the intstructions in Brightspace that best descirbes the work you accomplished. Be critical of the methods you use and the results you obtain, and clearly articulate your findings and what the reader needs to be aware of when understanding your work.
+- Finally, this is a challenging project with no single right outcome. It is your responsibility to get your code to work as best as possible and provide a write-up based on the instructions in Brightspace that best descirbes the work you accomplished. Be critical of the methods you use and the results you obtain, and clearly articulate your findings and what the reader needs to be aware of when understanding your work.
 
 # Code
 ## Cleaning Your Climate Data
