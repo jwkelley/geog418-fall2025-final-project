@@ -20,13 +20,13 @@ Before you move on to the code, please read over these tips to make your life ea
 
 # Code
 ## Cleaning Your Climate Data
-You are responsible for downloading at least one climate/weather variable from [PCIC's Weather Station Data Portal](https://services.pacificclimate.org/met-data-portal-pcds/app/) across multiple stations. It is recommended that you select a variable and station sources (e.g. EC = Environment Canada) so that you have a representation of points distributed across the province. You will also need to select an appropriate date range for your study. Do not include stations with no observations. Once you have selected your data, select the Station Data tab and check "Clip time series to filter data range". Download the time series as a CSV. **Please note that this might take a long time**. The example below shows a selection for hourly temperatures from the EC and EC_raw stations for the 2023 fire season.
+You are responsible for downloading at least one climate/weather variable from [PCIC's Weather Station Data Portal](https://services.pacificclimate.org/met-data-portal-pcds/app/) across multiple stations. It is recommended that you select a variable and station sources (e.g. EC = Environment Canada) so that you have a representation of points distributed across the province. You will also need to select an appropriate date range for your study. Do not include stations with no observations. Once you have selected your data, select the Station Data tab and check "Clip time series to filter data range". Download the time series as a CSV. **Please note that this will take a long time**. The example below shows a selection for hourly temperatures from the EC and EC_raw stations for the 2023 fire season.
 
 <img width="2543" height="941" alt="image" src="https://github.com/user-attachments/assets/e89ec952-2119-42a5-8641-d3f40c3aba31" />
 
 Once complete, you should see a folder with multiple CSV files, each one pertaining to a different station. Before processing this data, download the stataion metadata by selecting the Station Metadata tab, select "By Station", and select download. 
 
-<img width="1068" height="842" alt="image" src="https://github.com/user-attachments/assets/547cf15e-f089-4b13-83ec-9f36822f0180" />
+<img width="716" height="697" alt="image" src="https://github.com/user-attachments/assets/e68e6147-441d-47b7-bf68-48d41fb93d6b" />
 
 Now that you have downloaded the climate data, you will want to create a shapefile of your weather stations that contains your weather variable. Here is the code to do this:
 
