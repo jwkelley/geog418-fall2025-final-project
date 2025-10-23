@@ -24,135 +24,228 @@ You are responsible for downloading at least one climate/weather variable from [
 
 <img width="2543" height="941" alt="image" src="https://github.com/user-attachments/assets/e89ec952-2119-42a5-8641-d3f40c3aba31" />
 
-Once complete, you should see a folder with multiple CSV files, each one pertaining to a different station. Before processing this data, download the stataion metadata by selecting the Station Metadata tab, select "By Station", and select download. 
+Once complete, you should see a folder with multiple CSV files, each one pertaining to a different station. Before processing this data, download the stataion metadata by selecting the Station Metadata tab, select "By History", and select download. 
 
-<img width="716" height="697" alt="image" src="https://github.com/user-attachments/assets/e68e6147-441d-47b7-bf68-48d41fb93d6b" />
+<img width="708" height="498" alt="image" src="https://github.com/user-attachments/assets/2db7143b-5100-4ff1-ac2c-1e3d288b63aa" />
 
 Now that you have downloaded the climate data, you will want to create a shapefile of your weather stations that contains your weather variable. Here is the code to do this:
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-#Here are many of the libraries you will need. You may need to add more if your receive an error message saying that a specific function cannot be found.
+#Here are many of the libraries you will need. 
+#You may need to add more if your receive an error 
+#message saying that a specific function cannot be found.
 library(spdep)
-library(raster)
 library(sf)
 library(dplyr)
 library(gstat)
 library(ggplot2)
 library(spgwr)
+library(tmap)
+library(stars)
+library(spatstat)
+library(lubridate)
 
-# Create an empty data frame with specified columns. You will use this to write your weather station to when you want to combine your climate variables with the coordinates contained in the metadata.
-empty_data <- data.frame(Native.ID = character(), TEMP = numeric(), 
-                         Longitude = numeric(), Latitude = numeric(), stringsAsFactors = FALSE)
+
+#Set variable for working directory
+dir <- "C:/Users/Jason/OneDrive - University of Victoria/Geog418_202509/FinalProject/"
+
+
+#Here we will prep a template file to add the climate data summaries for each station
+
+#Create an empty data frame with the needed columns. 
+#You will use this to write your weather station data to when you want to 
+#Note that AirTemp refers specificlly to my variable of interest
+data <- data.frame(Native.ID = character(), AirTemp = numeric(),
+                   stringsAsFactors = FALSE)
+
 csv_file_name <- "BC_AVG_TEMP.csv" #We are giving the file this name as an example of calculating average temperatures in BC.
 
-# Write the empty data frame to a CSV file
-write.csv(empty_data, file = csv_file_name, row.names = FALSE) #We will call this file later. 
+#First, list all CSV files in the directory to make sure you are in the right folder. The folder we are looking at here is called BCH as this is the weather station network from which the data was obtained in PCIC.
+csv_files <- list.files(path = paste0(dir,"/Data/EC_raw/"), 
+                        pattern = "\\.csv$", 
+                        full.names = TRUE)
+
 ```
 
-You will have a CSV file for each weather station. You will need to perform some calculation on the data in each CSV. An easy way to do this is to use a for loop to run through every CSV file in a folder and apply the same statistics. The code below runs through all csv files in folder to calculate an aggregate measure of temperature.
+You will have a CSV file for each weather station. You will need to perform some calculation on the data in each CSV. An easy way to do this is to use a for loop to run through every CSV file in a folder and apply the same statistics. The code below is an example of a single loop for you to test.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-#First, list all CSV files in the directory to make sure you are in the right folder. The folder we are looking at here is called BCH as this is the weather station network from which the data was obtained in PCIC.
-csv_files <- list.files(path = "./Data/BCH", pattern = "\\.csv$", full.names = TRUE)
+########################################################
+### This section will help you setup the loop         ##
+### Practice with a single file to make sure          ##
+### you are getting the results you need then         ##
+### copy the final code into the for loop below       ##
+### Note the chages between the practice version here ##
+### and the final version in the loop below           ##
+########################################################
+file <- csv_files[1] #grab the first file to test
+file_path <- file
 
-#Next, loop through each CSV file and perform your calculations to calculate something about this variable. Here we calculate daily, montly, and season average temperatures. 
-for (file in csv_files) {
-
-#Read each file
+#Read file
 hourly_data <- read.csv(file, skip = 1, header = TRUE)
-file_name <- file
 
 #Adjust the date/time column so that it is usable in calculations
 hourly_data$time <- lubridate::ymd_hms(hourly_data$time) 
+hourly_data$Year <- lubridate::year(hourly_data$time)
+hourly_data$Month <- lubridate::month(hourly_data$time)
+hourly_data$Day <- lubridate::yday(hourly_data$time)
 
 #Convert your variable column (I call it AirTemp here) to numeric and remove NA's
-hourly_data$AirTemp <- as.numeric(hourly_data$AirTemp)
+hourly_data$AirTemp <- as.numeric(hourly_data$air_temperature)
 hourly_data <- hourly_data %>%
   filter(!is.na(AirTemp))
 
-#Here is an example of how to calculate daily average temperature from all the data.
+#Here is an example of how to calculate daily average temperature from the hourly data.
 daily_avg_temp <- hourly_data %>%
-  group_by(date = as.Date(time)) %>%
-  summarize(daily_avg_temp = mean(AirTemp, na.rm = TRUE))
+  dplyr::group_by(Day) %>%
+  dplyr::summarise(daily_avg_temp = mean(AirTemp, na.rm = TRUE))
 
-# Display the daily average temperatures
-print(daily_avg_temp)
+# We can average this over the season
+Season_avg_Daily <- mean(daily_avg_temp$daily_avg_temp)
 
-#Here is an example of hot to calculate monthly average temperature
+# # Display the daily average temperatures
+print(Season_avg_Daily)
+
+#Here is an example of how to calculate monthly average temperature
 monthly_avg_temp <- hourly_data %>%
-  group_by(year = year(time), month = month(time)) %>%
-  summarize(monthly_avg_temp = mean(AirTemp, na.rm = TRUE)) %>%
+  dplyr::group_by(Year, Month) %>%
+  dplyr::summarise(monthly_avg_temp = mean(AirTemp, na.rm = TRUE)) %>%
   ungroup()  # Ungroup for any future modifications
 
-# Display the monthly average temperatures
-print(monthly_avg_temp)
+#averaged over the season
+Season_avg_monthy <- mean(monthly_avg_temp$monthly_avg_temp)
 
-#What if we want to calculate an everage over seveal months, such as the length of the fire season?
-# Filter for the months from May to October
-average_temp_may_october <- hourly_data %>%
-  filter(month(time) >= 5 & month(time) <= 10) %>%
-  summarize(TEMP = mean(AirTemp, na.rm = TRUE))  # Replace 'temperature' with your column name
+# Display the monthly average temperatures
+print(Season_avg_monthy)
+
+# #What if we want to calculate an average for a specific subset, 
+#such as the middle of fire season?
+# Filter for the months from July and August
+average_temp_July_August <- hourly_data %>%
+  dplyr::filter(Month >= 7 & Month <= 8) %>%
+  dplyr::summarise(TEMP = mean(AirTemp, na.rm = TRUE))  # Replace 'TEMP' with your column name
 
 # Display the average temperature
-print(average_temp_may_october)
-```
+print(average_temp_July_August)
 
-In your empty CSV, you want to write your caluclation and include the weather station that it came from. You need to do this so that you can later join this CSV file with a shapefile of your weather station locations.
+#For the example below we will use season mean temp
+season_mean_temp <- hourly_data %>%
+  dplyr::summarise(AirTemp = mean(AirTemp, na.rm = TRUE))
 
-```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-#First, extract the filename as this is the name of your weather station.
-file_name <- basename(file_name)
+#Extract the filename as this is the name of your weather station.
+file_name <- basename(file)
 
-#Remove the file extension
+#Remove the file extension - This will be how the stations are named in the metadata file
 file_name_no_ext <- sub("\\.[^.]*$", "", file_name)
 
 # Display the result
 print(file_name_no_ext)
 
-#Read the existing CSV file
-file_path <- csv_file_name
-data <- read.csv(file_path)
-
 #Round the temperature values to two decimals
-Roundedtemp <- round(average_temp_may_october,2)
-
-#Convert the weather station ID column to character
-data$Native.ID <- as.character(data$Native.ID)
+Roundedtemp <- round(season_mean_temp,2)
 
 #Now, add your weather station and temperature values to the file
 new_values <- data.frame(Native.ID = file_name_no_ext, 
-                         TEMP = Roundedtemp, 
+                         AirTemp = Roundedtemp, 
                          stringsAsFactors = FALSE)
+
 data <- bind_rows(data, new_values)
 
 #Check your data to make sure that the row has been added.
 print(head(data))
 
-#Save the updated data frame back to a new CSV file
-output_file_path <- csv_file_name
-write.csv(data, file = output_file_path, row.names = FALSE)
+#########################################################
+# Go back and repeat for file <- csv_files[2] to see if # 
+# everything works as expected. If so you can copy your #
+# code into the loop below.                             #
+#########################################################
+```
+
+The code below is the full loop. Any changes that you made above make sure are reflected in the full loop below.
+
+```{r Data Cleaning 2, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+# Make sure to reset the 'data' object
+# so that your practice is not in the final result
+data_final <- data.frame(Native.ID = character(), AirTemp = numeric(),
+                         stringsAsFactors = FALSE)
+
+
+#Next, loop through each CSV file and perform your calculations to calculate something about this variable. Here we calculate daily, monthly, and season average temperatures. 
+for (file in csv_files) {
+  # file <- csv_files[2] #WE DONT NEED THIS LINE INSIDE THE LOOP
+  file_path <- file
+  
+  #Read file
+  hourly_data <- read.csv(file, skip = 1, header = TRUE)
+  
+  #Adjust the date/time column so that it is usable in calculations
+  hourly_data$time <- lubridate::ymd_hms(hourly_data$time) 
+  hourly_data$Year <- lubridate::year(hourly_data$time)
+  hourly_data$Month <- lubridate::month(hourly_data$time)
+  hourly_data$Day <- lubridate::yday(hourly_data$time)
+  
+  #Convert your variable column (I call it AirTemp here) to numeric and remove NA's
+  hourly_data$AirTemp <- as.numeric(hourly_data$air_temperature)
+  hourly_data <- hourly_data %>%
+    filter(!is.na(AirTemp))
+  
+  #For the example below we will use season mean temp
+  season_mean_temp <- hourly_data %>%
+    dplyr::summarise(AirTemp = mean(AirTemp, na.rm = TRUE))
+  
+  #Extract the filename as this is the name of your weather station.
+  file_name <- basename(file)
+  
+  #Remove the file extension - This will be how the stations are named in the metadata file
+  file_name_no_ext <- sub("\\.[^.]*$", "", file_name)
+  
+  # Display the result
+  print(file_name_no_ext)
+  
+  #Round the temperature values to two decimals
+  Roundedtemp <- round(season_mean_temp,2)
+  
+  #Now, add your weather station and temperature values to the file
+  new_values <- data.frame(Native.ID = file_name_no_ext, 
+                           AirTemp = Roundedtemp, 
+                           stringsAsFactors = FALSE)
+  
+  data_final <- bind_rows(data_final, new_values) #NOTE WE HAVE CHANGED TO THE data_final OBJECT
 }
+```
+
+In your empty CSV, you want to write your caluclations and include the weather station that it came from. You need to do this so that you can later join this CSV file with a shapefile of your weather station locations.
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+#Check your data to make sure that the rows have been added.
+print(head(data_final))
+
+#Save the updated data frame back to a new CSV file
+output_file_path <- paste0(dir, csv_file_name)
+write.csv(data_final, file = output_file_path, row.names = FALSE)
+
+#Read in the output climate data
+climatedata <- read.csv(paste0(dir,"BC_AVG_TEMP.csv"))
+
+#There is some duplicates in the metadata so we will filter the data to remove duplicates
+metadata <- read.csv(paste0(dir,"Data/station-metadata-by-history.csv"))
+metadata$Record.EndDate <- lubridate::ymd(metadata$Record.End)
+metadata <- subset(metadata, metadata$Record.EndDate >= "2023-03-30")
 
 #Merge the climate data for each station with the location data found in the metadata file
-metadata <- read.csv("./Data/station-metadata-by-history.csv")
-climatedata <- read.csv("BC_AVG_TEMP.csv")
-
 merged_data <- merge(metadata, climatedata, by = "Native.ID")
-
-#Remove the last two columns which are duplicate Latitude and Longitude
-merged_data <- merged_data[, -((ncol(merged_data)-1):ncol(merged_data))]
-
-#Change column names for Latitude and Longitude to remove the x
-colnames(merged_data)[colnames(merged_data) %in% c("Latitude.x", "Longitude.x")] <- c("Longitude", "Latitude")
 
 #Omit NA's
 merged_data <- na.omit(merged_data)
 
+#Look at the range of temperature data
+range(merged_data$AirTemp)
+
 #If there are erroneous temperature valuesn filter data to remove these.
-merged_data <- merged_data[merged_data$TEMP <= 100, ]
+merged_data <- merged_data[merged_data$AirTemp <= 100, ]
 
 #Write the dataset so that it  is stored
-write.csv(merged_data, file = "ClimateData.csv", row.names = FALSE)
+write.csv(merged_data, file = paste0(dir,"ClimateData.csv"), row.names = FALSE)
 ```
 We finish this last chunk of code by writing our ClimateData.csv file so that we have a copy saved. You can now use this dataset to create a shapefile of weather stations.
 
@@ -161,7 +254,7 @@ In this step you will open your ClimateData.csv file, create a shapefile, and th
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 # Read the CSV file
-climate_data <- read.csv("ClimateData.csv")
+climate_data <- read.csv(paste0(dir,"ClimateData.csv"))
 
 # Ensure Latitude and Longitude columns are correctly formatted
 # Assuming the columns are named "Latitude" and "Longitude"
@@ -170,267 +263,372 @@ climate_data <- climate_data %>%
          Longitude = as.numeric(Longitude))
 
 # Create a simple feature object (sf) using Latitude and Longitude
-climate_sf <- st_as_sf(climate_data, coords = c("Longitude", "Latitude"), crs = 3005)
+climate_sf <- st_as_sf(climate_data, coords = c("Longitude", "Latitude"), crs = 4326)
 
-# Optionally, you can select columns that you want to keep in the shapefile
-# climate_sf <- climate_sf %>% select(Your_Columns_Here)
+#Transform to a better CRS
+climate_sf <- st_transform(climate_sf, crs = 3005)
+
+# Optionally, you can clean up your data by selecting only the columns 
+# that you want to keep in the shapefile
+colnames(climate_sf)
+head(climate_sf)
+climate_sf <- climate_sf %>% select("Native.ID", "Station.ID", "Station.Name",
+                                    "Elevation..m.", "AirTemp")
 
 # Write the shapefile to disk
-st_write(climate_sf, "ClimateData.shp")
+st_write(climate_sf, paste0(dir,"ClimateData.shp"), append = FALSE)
 
 # Confirmation message
-print("Shapefile has been created: ClimateData.shp")
+print(paste0("Shapefile has been created: ClimateData.shp @ ", paste0(dir,"ClimateData.shp")))
 
 # Load the shapefiles
-climate_sf <- st_read("ClimateData.shp")
-bc_boundary <- st_read("ABMS_PROV_polygon.shp")
+climate_sf <- st_read(paste0(dir,"ClimateData.shp"))
+
+bc_boundary <- st_read(paste0(dir,"Data/BC.shp"))
+
+bc_boundary <- st_transform(bc_boundary, crs = 3005)
 
 # Create the map
-ggplot() +
-  geom_sf(data = bc_boundary, fill = "lightgrey", color = "black") +
-  # Map the TEMP variable to color
-  geom_sf(data = climate_sf, aes(color = TEMP), size = 2) + 
-  scale_color_gradient(low = "blue", high = "red") + # Adjust color gradient as needed
-  theme_minimal() +
-  labs(title = "Map of Climate Data Points in British Columbia",
-       subtitle = "Overlayed on BC Boundary",
-       x = "Longitude",  # Use Longitude for x-axis
-       y = "Latitude",   # Use Latitude for y-axis
-       color = "Temperature (°C)") + # Label for color legend
-  theme(legend.position = "bottom")
-```
+tm_shape(bc_boundary) +
+  tm_polygons(
+    fill = "lightgrey",
+    col = "black"
+  ) +
+  tm_shape(climate_sf) +
+  tm_symbols(
+    fill = "AirTemp",
+    size = 0.4,
+    fill.scale = tm_scale(values = "-brewer.rd_bu"),
+    fill.legend = tm_legend(title = "Temperature (°C)")
+  ) +
+  tm_title("Map of Climate Data Points in British Columbia") +
+  tm_layout(
+    legend.position = c("right", "center"),
+    frame = FALSE
+  )
 
+```
 
 ## Spatial Interpolation of Your Climate Data
 In this section you will create an interpolated surface of your weather data variable. You can use either inverse distance weighting or kriging to accomplish, or use both methods and compare the results between them.
 
 ### Inverse Distance Weighting
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-#Read the shapefile
-climate_data <- st_read("ClimateData.shp")
-abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
+#############################
+###         IDW           ###
+#############################
+#Setup a template to be used for all surfaces
+res    <- 10000                     # meters
+rasCRS <- st_crs(bc_boundary)      # projected CRS (e.g., EPSG:3005)
+bb     <- st_bbox(bc_boundary)
 
-#Create a grid for the interpolation. Adjust the extent and resolution of the grid according to your needs
-bbox <- st_bbox(abms_prov_polygon)
-grid <- st_make_grid(st_as_sfc(bbox), cellsize = c(50000, 50000))  # Adjust the cell size
+# Regular empty grid over the boundary bbox
+tmpl <- st_as_stars(bb, 
+                    dx = res, 
+                    dy = res, 
+                    crs = rasCRS,
+                    values = 0)
+
+names(tmpl) <- "blank"
+
+#Save Template
+write_stars(tmpl, file.path(dir, "grid_1km_template.tif"))
+
+
+#Read the shapefile
+climate_data <- st_read(paste0(dir,"ClimateData.shp"))
+
+
+#Use the template grid for the interpolation.
+grid <- read_stars(file.path(dir, "grid_1km_template.tif"))
+
+Power <- 2
+nb = 10
 
 #Interpolate using IDW
-idw_result <- gstat::idw(TEMP ~ 1, 
-                         locations = climate_data, 
-                         newdata = st_as_sf(grid), 
-                         idp = 2)
+idw_result <- gstat::idw(AirTemp ~ 1, #Formula 
+                         locations = climate_data, #Sample points
+                         newdata = grid, #Output grid
+                         idp = Power, #P level
+                         nmax = nb) #Number of neighbours
 
-#Convert idw_result to an sf object
-idw_sf <- st_as_sf(idw_result)
+tm_shape(idw_result) +
+  tm_raster(col = "var1.pred", 
+            col.scale = tm_scale_continuous(values = "viridis"),
+            col.legend = tm_legend(title = "IDW Temp (°C)")) +
+tm_shape(bc_boundary) + 
+  tm_polygons(col = "red",
+              fill_alpha = 0.1)
 
-#Extract coordinates 
-idw_sf <- st_as_sf(idw_result)
-
-#Plot the results using geom_sf() for better handling of sf objects
-ggplot(data = idw_sf) +
-  geom_sf(aes(fill = var1.pred), color = NA) +  # Fill based on predicted values
-  scale_fill_viridis_c() +
-  labs(title = "IDW Interpolation of Temperature", x = "Longitude", y = "Latitude") +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-#Save the result to a shapefile if needed
-st_write(idw_sf, "IDW_Result.shp", driver = "ESRI Shapefile", delete_dsn = TRUE)
 ```
-We will now clip the IDW results to the BC bounday.
+
+You may want a way to evaluate how the parameters of IDW impact your results. In the code below we perform leave-one-out cross validation to estimate how the surface changes as different points are left out.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-# Load the polygon shapefile for clipping
-abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
+nb <- 10
+Power <- 2
 
-# Verify the structure of the polygon shapefile
-print(head(abms_prov_polygon))
+cv <- numeric(nrow(climate_data))
+  
+for(i in 1:nrow(climate_data)){
+  train <- climate_data[-i,]
+  test <- climate_data[i,]
+  
+  estimate <- gstat::idw(AirTemp ~ 1, #Formula 
+                         locations = train, #Sample points
+                         newdata = test, #Output grid
+                         idp = Power, #P level
+                         nmax = nb,
+                         debug.level = 0) #Number of neighbours
+  
+  cv[i] <- estimate$var1.pred
+}
+result <- data.frame(Obs = climate_data$AirTemp, Pred = cv)
+result$Resid <- result$Obs - result$Pred
+RMSE <- sqrt(mean(result$Resid^2))
+bias <- mean(result$Resid)
+
+ggplot(result, aes(x = Obs, y = Pred)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", col = "grey") +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  xlim(5,20) +
+  ylim(5,20) +
+  xlab("Observed (°C)") +
+  ylab("Predicted (°C)") +
+  annotate( "text", x = -Inf, y = Inf,
+            hjust = -0.1, vjust = 1.1,
+            label = paste0("RMSE = ", round(RMSE, 2), "  Bias = ", round(bias, 2))
+  ) +
+  theme_classic()
+```
+
+You can use this to test a range of neighbour values (nb) and Power values. After you have a final IDW surface you might want to clip it to the BC polygon and map it.
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 # Check the CRS of both objects
-crs_idw <- st_crs(idw_sf)  # CRS of IDW result
-crs_polygon <- st_crs(abms_prov_polygon)  # CRS of the polygon shapefile
+crs_idw <- st_crs(idw_result)  # CRS of IDW result
+crs_polygon <- st_crs(bc_boundary)  # CRS of the polygon shapefile
 
 # Transform the CRS of either shapefile if they do not match
 if (crs_idw != crs_polygon) {
   # Transform the IDW result to match the CRS of the polygon
-  idw_sf <- st_transform(idw_sf, crs = crs_polygon)  # Transform IDW result to polygon's CRS
+  idw_result <- st_transform(idw_result, crs = crs_polygon)  # Transform IDW result to polygon's CRS
   message("Transformed IDW result CRS to match the polygon.")
 } else {
   message("CRS of IDW result and polygon already match.")
 }
 
-# Now attempt the intersection again
-idw_clipped <- st_intersection(idw_sf, abms_prov_polygon)
-
-# Check the results of clipping
-print(st_geometry(idw_clipped))  # Check geometry to ensure it's clipped correctly
+#Clip to the BC boundary
+idw_clipped <- idw_result[bc_boundary]
 
 #Create the map of the clipped results
-ggplot(data = idw_clipped) +
-  geom_sf(aes(fill = var1.pred), color = NA) +  # Fill based on predicted temperature values
-  scale_fill_viridis_c(option = "D") +  # Use viridis color scale for better readability
-  labs(title = "Clipped IDW Interpolation of Temperature",
-       fill = "Temperature (°C)",  # Change label as appropriate
-       x = "Longitude", 
-       y = "Latitude") +
-  theme_minimal() +
-  theme(legend.position = "right")
+map <- tm_shape(bc_boundary) + 
+  tm_polygons(fill = "grey90", 
+              col = "grey40") +
+  tm_shape(idw_clipped) +
+  tm_raster("var1.pred", 
+            col.scale = tm_scale_continuous(values = "viridis"),
+            col.legend = tm_legend(
+              title = "IDW Pred Temperature (°C)",
+              position = tm_pos_out("right", "center"))) +
+  tm_layout(frame = FALSE)
 
 #Save the map as an image file (optional)
-ggsave("Clipped_IDW_Interpolation_Map.png", width = 10, height = 8, dpi = 300)
-
+tmap_save(map, filename = file.path(dir, "Clipped_IDW_Interpolation_Map.png"))
+write_stars(idw_clipped["var1.pred"], file.path(dir, "idw_airtemp_1Km.tif"))
 ```
 
 ### Kriging
+This section outlines the Ordinary Kriging portion of the spatial interpolation.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-
+#####################################
+###         Kriging               ###
+#####################################
 # Read the shapefile
-climate_data <- st_read("ClimateData.shp")
+climate_data <- st_read((paste0(dir,"ClimateData.shp")))
 
-f.0 <- as.formula(TEMP ~ 1) 
+#We need to identify and deal with any duplicated points
+dup <- duplicated(st_coordinates(climate_data)) #Look for any coordinates that are exact
+sum(dup) #If this is greater than 0 then you have some duplicated points
+
+#Add coordinate columns
+climate_data$X <- st_coordinates(climate_data)[,1]
+climate_data$Y <- st_coordinates(climate_data)[,2]
+
+#calculate the mean variable for any duplicated points
+means <- climate_data %>%
+  st_drop_geometry() %>%
+  group_by(X, Y) %>%
+  summarise(AirTemp = mean(AirTemp, na.rm = TRUE), .groups = "drop")
+
+#Keep all other data from the first occurance of the duplicated station
+firsts <- climate_data %>%
+  group_by(X, Y) %>%
+  slice(1) %>%
+  ungroup()
+
+climate_data_nodup <- firsts %>%
+  select(-AirTemp) %>%
+  left_join(means, by = c("X", "Y"))
+
+#Start with setting up an empty raster template
+grid <- read_stars(file.path(dir, "grid_1km_template.tif"))
 
 # Create variogram. Be sure to test out the three different models.
-var.smpl <- variogram(f.0, climate_data, cloud = FALSE) 
-dat.fit  <- fit.variogram(var.smpl, fit.ranges = TRUE, fit.sills = TRUE,
-                          vgm(model="Sph", nugget = 8, psill = 20, 
-                              range = 400000))
+var.smpl <- variogram(AirTemp ~ 1, climate_data_nodup, cloud = FALSE,
+                      cutoff = 500000, width = 25000) 
+plot(var.smpl)
+
+
+dat.fit  <- fit.variogram(var.smpl, fit.ranges = FALSE, fit.sills = FALSE,
+                          vgm(model="Gau", nugget = 0.4, psill = 4.5, 
+                              range = 180000))
+
 plot(var.smpl, dat.fit)
 
-# Define the grid
-xmin <- st_bbox(climate_data)$xmin
-xmax <- st_bbox(climate_data)$xmax
-ymin <- st_bbox(climate_data)$ymin
-ymax <- st_bbox(climate_data)$ymax
+dat.krg <- krige(AirTemp ~ 1, climate_data_nodup, grid, dat.fit, debug.level=0)
 
-# Create a regular grid
-n <- 50000  # Number of points
-grd <- st_as_sf(expand.grid(x = seq(xmin, xmax, length.out = sqrt(n)),
-                            y = seq(ymin, ymax, length.out = sqrt(n))),
-                coords = c("x", "y"), crs = st_crs(climate_data))
 
-dat.krg <- krige(f.0, climate_data, grd, dat.fit, debug.level=0)
 
-# Convert the kriging output to an sf object
-kriging_results_sf <- st_as_sf(dat.krg)
+krgResult <- dat.krg[bc_boundary]
 
-# Create a Raster from Kriging Results
-# 1. Convert to a data frame with coordinates for raster creation
-coords_df <- as.data.frame(st_coordinates(kriging_results_sf))
-coords_df$predicted_temp <- kriging_results_sf$var1.pred  # Replace with your prediction column
 
-# 2. Create the raster from the resulting data frame
-predicted_raster <- rasterFromXYZ(coords_df)
+map_krg <- tm_shape(bc_boundary) + 
+  tm_polygons(fill = "grey90", 
+              col = "grey40") +
+  tm_shape(krgResult) +
+  tm_raster("var1.pred", 
+            col.legend = tm_legend(
+              "KRG Pred Temperature (°C)",
+              position = tm_pos_out("right", "center")),
+            col.scale = tm_scale_continuous(values = "viridis")) +
+  tm_layout(frame = FALSE)
 
-# Visualize the raster
-tm_shape(predicted_raster) +
-  tm_raster(palette = "viridis", title = "Predicted Temperature") +
-  tm_layout(title = "Kriging Results for Temperature") +
-  tm_compass(position = c("right", "top")) +
-  tm_scale_bar()
+tmap_save(map_krg, 
+          filename = file.path(dir, "Clipped_OK_Interpolation_Map.png"))
+
+map_krg_var <- tm_shape(bc_boundary) + 
+  tm_polygons(fill = "grey90", 
+              col = "grey40") +
+  tm_shape(krgResult) +
+  tm_raster("var1.var", 
+            col.legend = tm_legend(
+              "KRG Variance (°C)",
+              position = tm_pos_out("right", "center")),
+            col.scale = tm_scale_continuous(values = "viridis")) +
+  tm_layout(frame = FALSE)
+
+tmap_save(map_krg_var, 
+          filename = file.path(dir, "Clipped_OK_Interpolation_Var.png"))
+
+
+write_stars(krgResult["var1.pred"], file.path(dir, "ok_airtemp_1Km.tif"))
+write_stars(krgResult["var1.var"], file.path(dir, "ok_variance_1Km.tif"))
 ```
 
 ## Creating a Density Map of Your Events Data
-In this section you will create a raster dataset of the density of points per unity area across the province. You will convert your point shapefile into a density raster showing the number of events per raster cell. Be mindful that the resolution you select here should match the resolution of your spatial interpolation outputs.
+In this section you will create a raster dataset of the density of points per unit area across the province. You will convert your point shapefile into a density raster showing the number of events per raster cell. Be mindful that the resolution you select here should match the resolution of your spatial interpolation outputs.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-# Load your point data (make sure to adjust the path). Here we use a wildfire dataset from the BC Data Catoluge called C_FIRE_PNT_point and our BC Boundary file.
-C_FIRE_PNT_point <- st_read("C_FIRE_PNT_point.shp")
-abms_prov_polygon <- st_read("ABMS_PROV_polygon.shp")  # Ensure the path is correct
+########################################################################
+### Density Surface                                                  ###
+########################################################################
+#Load the province polygon
+bc <- st_read(file.path(dir,
+                        "Data/BC.shp"))
 
-# Ensure bbox2 is valid and formatted correctly
-bbox2 <- st_bbox(abms_prov_polygon)
+#Load the fire data
+firePoints <- st_read(file.path(dir,
+                                "Data/H_FIRE_PNT_point.shp"))
+#Add date columns to data
+firePoints$Date <- as.Date(firePoints$IGN_DATE, format = "%Y%m%d")
+firePoints$Year <- year(firePoints$Date)
+firePoints$Month <- month(firePoints$Date)
+firePoints$Day <- yday(firePoints$Date)
 
-raster_res <- 100000  # This resolution in 100000 meters 
-raster_template <- raster(extent(bbox2), res = c(raster_res, raster_res))
+#Subset to the time of your analysis
+firePoints <- subset(firePoints, firePoints$Year == 2023)
+firePoints <- subset(firePoints, firePoints$Day >= 91 & firePoints$Day <= 304)
 
-# Estimate density using kernel density estimate
-density_raster <- raster::rasterize(st_as_sf(C_FIRE_PNT_point), raster_template, fun = "count", field = 1)
+#Subset to fires >= 0.25 ha
+firePoints <- subset(firePoints, firePoints$SIZE_HA >= 0.25)
 
-# Ensure all NAs are turned to zeros in the raster
-density_raster[is.na(density_raster)] <- 0
+firePoints$X <- st_coordinates(firePoints)[,1]
+firePoints$Y <- st_coordinates(firePoints)[,2]
 
-# Convert the raster to a data frame and replace any potential NAs with zeros
-density_df <- as.data.frame(density_raster, xy = TRUE)
-density_df[is.na(density_df)] <- 0  # Replace NAs in the data frame with zeros
+# Create the map
+tm_shape(bc_boundary) +
+  tm_polygons(
+    fill = "lightgrey",
+    col = "black"
+  ) +
+  tm_shape(firePoints) +
+  tm_symbols(
+    fill = "red",
+    size = 0.4,
+    ) +
+  tm_title("Map of Fire Data Points in British Columbia") +
+  tm_layout(
+    frame = FALSE
+  )
 
-# Step to rename the 'layer' column to 'fires' if applicable
-colnames(density_df)[colnames(density_df) == "layer"] <- "fires"
+#Start with setting up an empty raster template
+grid <- read_stars(file.path(dir, "grid_1km_template.tif"))
 
-# Convert to a spatial points data frame using sf (if needed later)
-density_sf <- st_as_sf(density_df, coords = c("x", "y"), crs = st_crs(abms_prov_polygon))
+kma_ext <- as.matrix(st_bbox(grid))
 
-# Plotting the density map with the polygon boundary
-ggplot() +
-  geom_raster(data = density_df, aes(x = x, y = y, fill = fires)) +  # Use 'fires' from the data frame
-  geom_sf(data = abms_prov_polygon, fill = NA, color = "black") + # Boundary polygon
-  scale_fill_viridis_c(option = "plasma") +  # Using a color scale
-  theme_minimal() +
-  labs(title = "Density Map of Fire Points",
-       x = "Longitude",
-       y = "Latitude",
-       fill = "Density")
+#Now create the observation window
+window <- as.owin(list(xrange = c(kma_ext[1], kma_ext[3]),
+                       yrange = c(kma_ext[2], kma_ext[4])))
 
-# Convert the raster to a data frame
-density_df <- as.data.frame(density_raster, xy = TRUE)
+#Finally, create a ppp object for doing the KDE.
+kma1.ppp <- ppp(x = firePoints$X, y = firePoints$Y, window = window)
 
-# Rename the 'layer' column to 'fires'
-colnames(density_df)[colnames(density_df) == "layer"] <- "fires"
+#Sigma estimation
+bw.d1 <- bw.diggle(kma1.ppp)
 
-# Replace NA values with zeros
-density_df[is.na(density_df$fires), "fires"] <- 0
+#KDE Surface
+kde.bwo1 <- density(kma1.ppp, sigma = bw.d1, 
+                    at = "pixels", eps = c(1000, 1000))
 
-# Convert to a spatial points data frame using sf
-density_sf <- st_as_sf(density_df, coords = c("x", "y"), crs = st_crs(abms_prov_polygon))
+#Convert to points per km2 instead of m2
+kde_km2 <- kde.bwo1 * 1000000
 
-# Write to a shapefile
-st_write(density_sf, "density_points.shp", delete_dsn = TRUE)
+#Convert to a raster data type
+kde_st <- st_as_stars(kde_km2)
 
-# Create a simple map
-ggplot() +
-  geom_sf(data = abms_prov_polygon, fill = NA, color = "black") +  # Plot the boundary polygon
-  geom_sf(data = density_sf, aes(color = fires), size = 1) +  # Plot the density points with color mapping
-  scale_color_viridis_c(option = "plasma", name = "Density of Fires") +  # Color scale for density values
-  theme_minimal() +
-  labs(title = "Density of Fires within Boundary",
-       x = "Longitude",
-       y = "Latitude")
+#Add the CRS back
+st_crs(kde_st) <- st_crs(firePoints)
+
+#Clip to the BC polygon
+kde_st <- kde_st[bc]
+
+#Make a map
+map_kde <- tm_shape(bc_boundary) + 
+  tm_polygons(fill = "grey90", 
+              col = "grey40") +
+  tm_shape(kde_st) +
+  tm_raster("v", 
+            col.legend = tm_legend(
+              "Fire Density \n(# pnts/Km2)",
+              position = tm_pos_out("right", "center")),
+            col.scale = tm_scale_continuous(values = "viridis")) +
+  tm_layout(frame = FALSE)
 ```
 
 ## Combining Your Climate and Events Data
 In this section you will combine the Climate and Events data by adding the density values from the Events dataset to the polygons in the interpolated surface.
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-# Perform the spatial join
-joined_data <- st_join(idw_clipped, density_sf, join = st_intersects)
+#Stack and align the Density layer and the interpolated surface
+stack <- c(st_warp(idw_clipped, dest = grid, method = "near"),
+           st_warp(kde_st, dest = grid, method = "near"))
 
-# Select needed columns
-final_data <- joined_data[, c("var1.pred", "fires")]
-
-# Rename column
-final_data <- final_data %>%
-  rename(temperature = var1.pred)
-
-# Replace NA values in the fires column with 0
-final_data <- final_data %>%
-  mutate(fires = ifelse(is.na(fires), 0, fires))
-
-# Create the map
-ggplot(data = final_data) +
-  geom_sf(aes(fill = fires)) +
-  scale_fill_viridis_c(option = "C") +
-  theme_minimal() +
-  labs(title = "Temperature Map",
-       fill = "Temperature (°C)") +
-  theme(legend.position = "right")
-
-# Save final_data as a shapefile
-st_write(final_data, "final_data.shp", delete_dsn = TRUE)
-
-# Convert final_data to a data frame
-final_data_df <- st_drop_geometry(final_data)
-
-# Write as CSV
-write.csv(final_data_df, "final_data.csv", row.names = FALSE)
+final_data_sf <- st_as_sf(stack, as_points = TRUE, merge = FALSE, na.rm = FALSE)
+colnames(final_data_sf) <- c("Temperature", "TemperatureVar", "FireDensity", "geometry")
+final_data_sf <- final_data_sf %>% filter(!is.na(Temperature) & !is.na(FireDensity))
+st_write(final_data_sf, file.path(dir, "final_data.shp"), append = FALSE)
 ```
 
 ## Performing Oridnary Least Squares Regression
@@ -438,63 +636,75 @@ In this section you will perform an Ordinary Least Squares Regression to assess 
 
 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-
-# Read the shapefile
-final_data_sf <- st_read("final_data.shp")
-
 # Fit the OLS regression model on the entire spatial data
 # Use "temprtr" instead of "temperature"
-ols_model <- lm(fires ~ temprtr, data = final_data_sf)
+ols_model <- lm(FrDnsty ~ Temprtr, data = final_data_sf)
+summary(ols_model)
 
-# Add residuals to the original spatial data frame
-final_data_sf$residuals <- resid(ols_model)
+par(mfrow = c(2,2))
+plot(ols_model)
+par(mfrow = c(1,1))
 
-# Inspect the updated spatial object to verify residuals are added
-print(head(final_data_sf))
+final_data_sf$Pred <- ols_model$fitted.values
+final_data_sf$Resid <- ols_model$residuals
+
+ggplot(final_data_sf, aes(x = FrDnsty, y = Pred)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", col = "grey") +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  xlim(0,0.006) +
+  ylim(0,0.006) +
+  xlab("Observed (°C)") +
+  ylab("Predicted (°C)") +
+  annotate( "text", x = -Inf, y = Inf,
+            hjust = -0.1, vjust = 1.1,
+            label = paste0("RMSE = ", round(RMSE, 2), "  Bias = ", round(bias, 2))
+  ) +
+  theme_classic()
+
 
 # (Optional) Save the updated shapefile with residuals
 st_write(final_data_sf, "final_data_with_residuals.shp", delete_dsn = TRUE)
 
 # Create a map of residuals from the OLS regression
-ggplot(data = final_data_sf) +
-  geom_sf(aes(fill = residuals)) + # Map the residuals to fill color
-  scale_fill_viridis_c(option = "C", name = "Residuals") + # Use a color scale
-  theme_minimal() +
-  labs(title = "Map of Residuals from OLS Regression",
-       fill = "Residuals") +
-  theme(legend.position = "right")
+tm_shape(bc) + 
+  tm_polygons(fill = "grey90", 
+              col = "grey40") +
+  tm_shape(final_data_sf) +
+  tm_symbols(fill = "Resid",
+             col_alpha = 0,
+             fill_alpha = 0.6,
+             size = 0.4,
+             fill.scale = tm_scale(values = "-brewer.rd_bu"),
+             fill.legend = tm_legend(title = "Fire Density \n(pnts/Km2)")) +
+  tm_layout(frame = FALSE)
+```
 
-# Optional: Save the plot if desired
-ggsave("residuals_map.png", width = 10, height = 8, dpi = 300)
+You will then want to perform an analysis of spatial autocorrelation on the OLS residuals. Here is some code to show how to do a Global Moran's I with point data.
+
+```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+# Create neighborhood structure
+knn <- knearneigh(st_coordinates(final_data_sf), k = 8, longlat = FALSE)
+nb <- knn2nb(knn, sym = TRUE)
+lw_knn <- nb2listw(nb, style = "W", zero.policy = TRUE)
+
+# Check neighbors for any issues
+print(summary(nb))
+
+mi <- moran.test(final_data_sf$Resid, lw_knn, zero.policy = TRUE)
 ```
 
 ## Performing Geographically Weighted Regression
 In this section you will perform Geographically Weighted Regression to assess if your climate variable is able to explain the variability in the density of events at local scales. 
 ```{r Data Cleaning, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-# Read the shapefile (with residuals included)
-final_data_sf <- st_read("final_data.shp")
-
-# Preview the data to check variable names and content
-print(head(final_data_sf))
-print(colnames(final_data_sf))
-
-# Convert the sf object to Spatial object
-final_data_sp <- as_Spatial(final_data_sf)
-
-# Create neighborhood structure
-neighbors <- poly2nb(final_data_sp, queen = TRUE)
-
-# Check neighbors for any issues
-print(summary(neighbors))
-
 # Check for any empty neighbors
-if (any(sapply(neighbors, length) == 0)) {
+if (any(sapply(nb, length) == 0)) {
   warning("Some polygons have no neighbors. This may cause issues for GWR.")
 }
 
 # Prepare the dependent and independent variables
-dependent_var <- final_data_sp@data$fires
-independent_vars <- final_data_sp@data$temprtr
+dependent_var <- final_data_sf$FrDnsty
+independent_vars <- final_data_sf$Temprtr
 
 # Check if both variables are numeric
 if (!is.numeric(dependent_var) || !is.numeric(independent_vars)) {
@@ -505,9 +715,11 @@ if (!is.numeric(dependent_var) || !is.numeric(independent_vars)) {
 fixed_bandwidth <- 200000  # Bandwidth in meters (200 km)
 
 gwr_model_fixed <- gwr(dependent_var ~ independent_vars, 
-                       data = final_data_sp, 
+                       data = final_data_sf,
+                       coords = st_coordinates(final_data_sf),
                        bandwidth = fixed_bandwidth, 
-                       se.fit = TRUE)
+                       se.fit = TRUE,
+                       hatmatrix = TRUE)
 
 # Validate that the model ran successfully
 if (is.null(gwr_model_fixed)) {
@@ -524,28 +736,18 @@ print(summary(gwr_model_fixed))
 # Extract coefficients and create a dataframe for visualization
 gwr_results_fixed <- as.data.frame(gwr_model_fixed$SDF)
 
-# Extract coordinates from the original spatial data
-coordinates_fixed <- st_coordinates(final_data_sf)  # Get coordinates from the original data
+final_data_sf <- cbind(final_data_sf, gwr_results_fixed)
 
-# Combine the GWR results with the coordinates
-# Assuming GWR results correspond directly (else we may need to adjust identifiers),
-# Make sure to bind them under the known column names for proper mapping.
-gwr_results_fixed <- cbind(gwr_results_fixed, coordinates_fixed)
-
-# Convert to an sf object for visualization
-# Adjusting the coordinate column names based on what exists in gwr_results_fixed
-# Normally, standard output names would have been “coords.X1” and “coords.Y” or similar
-gwr_output_sf_fixed <- st_as_sf(gwr_results_fixed, coords = c("X", "Y"), crs = st_crs(final_data_sf))
-
-# Plotting GWR coefficients with the fixed bandwidth
-ggplot(data = gwr_output_sf_fixed) +
-  geom_sf(aes(fill = Estimate), color = NA) +
-  scale_fill_viridis_c(option = "C") +
-  labs(title = "GWR Coefficients with Fixed Bandwidth of 200 km",
-       fill = "GWR Estimate") +
-  theme_minimal()
-
-# Optional: Save the plot
-ggsave("gwr_coefficients_fixed_bandwidth.png", width = 10, height = 8, dpi = 300)
+tm_shape(bc) + 
+  tm_polygons(fill = "grey90", 
+              col = "grey40") +
+  tm_shape(final_data_sf) +
+  tm_symbols(fill = "pred",
+             col_alpha = 0,
+             fill_alpha = 0.6,
+             size = 0.4,
+             fill.scale = tm_scale(values = "-brewer.rd_bu"),
+             fill.legend = tm_legend(title = "Fire Density \n(pnts/Km2)")) +
+  tm_layout(frame = FALSE)
 
 ```
